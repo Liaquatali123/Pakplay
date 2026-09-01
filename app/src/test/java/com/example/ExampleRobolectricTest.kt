@@ -116,4 +116,55 @@ class ExampleRobolectricTest {
         assertEquals(1, playlistVideos.size)
         assertEquals("Action Trailer", playlistVideos.first().title)
     }
+
+    @Test
+    fun `test incremental sync and VideoSyncInfo retrieval`() = runBlocking {
+        val v1 = VideoEntity(
+            id = 301L,
+            title = "Episode 1",
+            path = "/storage/emulated/0/Anime/ep1.mkv",
+            duration = 1440000L,
+            size = 350000000L,
+            dateModified = 1000L,
+            folder = "Anime"
+        )
+        val v2 = VideoEntity(
+            id = 302L,
+            title = "Episode 2",
+            path = "/storage/emulated/0/Anime/ep2.mkv",
+            duration = 1440000L,
+            size = 350000000L,
+            dateModified = 1000L,
+            folder = "Anime"
+        )
+        database.videoDao().insertVideos(listOf(v1, v2))
+
+        val syncInfo = database.videoDao().getAllVideoSyncInfo()
+        assertEquals(2, syncInfo.size)
+        assertTrue(syncInfo.any { it.id == 301L && it.path == "/storage/emulated/0/Anime/ep1.mkv" })
+
+        // Incremental sync updates: insert v3, update v1, delete v2
+        val v3 = VideoEntity(
+            id = 303L,
+            title = "Episode 3",
+            path = "/storage/emulated/0/Anime/ep3.mkv",
+            duration = 1440000L,
+            size = 350000000L,
+            dateModified = 2000L,
+            folder = "Anime"
+        )
+        val v1Updated = v1.copy(title = "Episode 1 (Director's Cut)", dateModified = 2000L)
+
+        database.videoDao().applyIncrementalSync(
+            toInsert = listOf(v3),
+            toUpdate = listOf(v1Updated),
+            toDeleteIds = listOf(302L)
+        )
+
+        val updatedVideos = repository.allVideos.first()
+        assertEquals(2, updatedVideos.size)
+        assertTrue(updatedVideos.any { it.title == "Episode 1 (Director's Cut)" })
+        assertTrue(updatedVideos.any { it.title == "Episode 3" })
+        assertTrue(updatedVideos.none { it.id == 302L })
+    }
 }

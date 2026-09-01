@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.example.data.local.entity.VideoEntity
 import kotlinx.coroutines.flow.Flow
@@ -15,11 +16,26 @@ data class FolderSummary(
     val latestDateAdded: Long
 )
 
+data class VideoSyncInfo(
+    val id: Long,
+    val path: String,
+    val dateModified: Long,
+    val size: Long,
+    val duration: Long,
+    val isFavorite: Boolean,
+    val lastPlayed: Long,
+    val resumePosition: Long,
+    val watchedPercentage: Int
+)
+
 @Dao
 interface VideoDao {
 
     @Query("SELECT * FROM videos ORDER BY dateAdded DESC")
     fun getAllVideos(): Flow<List<VideoEntity>>
+
+    @Query("SELECT id, path, dateModified, size, duration, isFavorite, lastPlayed, resumePosition, watchedPercentage FROM videos")
+    suspend fun getAllVideoSyncInfo(): List<VideoSyncInfo>
 
     @Query("SELECT * FROM videos WHERE id = :id")
     suspend fun getVideoById(id: Long): VideoEntity?
@@ -99,4 +115,21 @@ interface VideoDao {
 
     @Query("UPDATE videos SET resumePosition = 0, watchedPercentage = 0")
     suspend fun clearResumePositions()
+
+    @Transaction
+    suspend fun applyIncrementalSync(
+        toInsert: List<VideoEntity>,
+        toUpdate: List<VideoEntity>,
+        toDeleteIds: List<Long>
+    ) {
+        if (toDeleteIds.isNotEmpty()) {
+            deleteVideosByIds(toDeleteIds)
+        }
+        if (toInsert.isNotEmpty()) {
+            insertVideos(toInsert)
+        }
+        if (toUpdate.isNotEmpty()) {
+            insertVideos(toUpdate)
+        }
+    }
 }

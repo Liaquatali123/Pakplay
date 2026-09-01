@@ -15,6 +15,9 @@ import com.example.data.local.entity.VideoEntity
 import com.example.data.preferences.AppSettings
 import com.example.data.preferences.PlayerSettingsState
 import com.example.data.repository.VideoRepository
+import com.example.data.scanner.MediaScanResult
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -97,7 +100,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isGridView: StateFlow<Boolean> = _isGridView.asStateFlow()
 
     // Data streams from Room
-    val allVideosRaw = repository.allVideos
+    val allVideosRaw: StateFlow<List<VideoEntity>> = repository.allVideos.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
     val recentlyPlayed = repository.recentlyPlayed.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val recentlyAdded = repository.recentlyAdded.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     val continueWatching = repository.continueWatching.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -169,18 +176,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private var activeScanJob: Job? = null
+
     init {
-        scanMedia()
+        // Startup media sync runs asynchronously in background without blocking Home UI
+        scanMedia(force = false)
     }
 
-    fun scanMedia() {
-        viewModelScope.launch {
+    fun scanMedia(force: Boolean = false) {
+        // Debounce / coalesce: if a background scan is already running and not forced, do not spawn duplicate jobs
+        if (activeScanJob?.isActive == true && !force) {
+            return
+        }
+
+        activeScanJob = viewModelScope.launch(Dispatchers.IO) {
             _isScanning.value = true
             try {
-                repository.scanMedia()
-                repository.cleanStaleRecords()
+                repository.scanMedia(forceFullScan = force)
             } catch (e: Exception) {
-                Log.e("MainViewModel", "Scan error", e)
+                Log.e("MainViewModel", "Background media scan error", e)
             } finally {
                 _isScanning.value = false
             }

@@ -170,12 +170,29 @@ fun HomeScreen(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (isScanning) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                strokeWidth = 2.dp,
-                                color = CyanNeon
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = CyanNeon.copy(alpha = 0.15f),
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(12.dp),
+                                        strokeWidth = 2.dp,
+                                        color = CyanNeon
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Updating library...",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = CyanNeon
+                                    )
+                                }
+                            }
                         }
 
                         Surface(
@@ -183,7 +200,7 @@ fun HomeScreen(
                             color = MaterialTheme.colorScheme.surfaceContainer
                         ) {
                             IconButton(
-                                onClick = { viewModel.scanMedia() },
+                                onClick = { viewModel.scanMedia(force = true) },
                                 modifier = Modifier.testTag("scan_media_button")
                             ) {
                                 Icon(
@@ -408,6 +425,32 @@ fun HomeScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
                     )
                 }
+            } else if (allVideos.isEmpty() && isScanning) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp, horizontal = 24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(36.dp),
+                                strokeWidth = 3.dp,
+                                color = CyanNeon
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Indexing your video library...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             } else if (allVideos.isEmpty() && !isScanning) {
                 item {
                     EmptyStateView(
@@ -415,7 +458,7 @@ fun HomeScreen(
                         title = "No Videos Found",
                         description = "Scan your device to find and play local video files.",
                         actionButtonText = "Scan Videos",
-                        onActionClick = { viewModel.scanMedia() }
+                        onActionClick = { viewModel.scanMedia(force = true) }
                     )
                 }
             }

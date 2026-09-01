@@ -105,20 +105,30 @@ fun VideosScreen(
                 .padding(innerPadding)
         ) {
             if (videos.isEmpty()) {
-                EmptyStateView(
-                    icon = Icons.Default.VideoLibrary,
-                    title = if (searchQuery.isNotEmpty()) "No Matching Videos" else "No Videos Found",
-                    description = if (searchQuery.isNotEmpty()) "Try adjusting your search terms or filters." else "Scan your device to find video files.",
-                    actionButtonText = if (searchQuery.isNotEmpty()) "Clear Search" else "Scan Videos",
-                    onActionClick = {
-                        if (searchQuery.isNotEmpty()) {
-                            viewModel.setSearchQuery("")
-                            viewModel.resetFilters()
-                        } else {
-                            viewModel.scanMedia()
+                if (isScanning) {
+                    EmptyStateView(
+                        icon = Icons.Default.VideoLibrary,
+                        title = "Updating Library...",
+                        description = "Scanning your device for video files in the background.",
+                        actionButtonText = "",
+                        onActionClick = {}
+                    )
+                } else {
+                    EmptyStateView(
+                        icon = Icons.Default.VideoLibrary,
+                        title = if (searchQuery.isNotEmpty()) "No Matching Videos" else "No Videos Found",
+                        description = if (searchQuery.isNotEmpty()) "Try adjusting your search terms or filters." else "Scan your device to find video files.",
+                        actionButtonText = if (searchQuery.isNotEmpty()) "Clear Search" else "Scan Videos",
+                        onActionClick = {
+                            if (searchQuery.isNotEmpty()) {
+                                viewModel.setSearchQuery("")
+                                viewModel.resetFilters()
+                            } else {
+                                viewModel.scanMedia(force = true)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             } else {
                 if (isGridView) {
                     LazyVerticalGrid(

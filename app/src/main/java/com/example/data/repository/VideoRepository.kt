@@ -8,6 +8,7 @@ import com.example.data.local.entity.PlaybackSettingsEntity
 import com.example.data.local.entity.PlaylistEntity
 import com.example.data.local.entity.PlaylistItemEntity
 import com.example.data.local.entity.VideoEntity
+import com.example.data.scanner.MediaScanResult
 import com.example.data.scanner.MediaScanner
 import kotlinx.coroutines.flow.Flow
 
@@ -25,7 +26,8 @@ class VideoRepository(
     val folderSummaries: Flow<List<FolderSummary>> = videoDao.getFolderSummaries()
     val playlists: Flow<List<PlaylistEntity>> = playlistDao.getAllPlaylists()
 
-    suspend fun scanMedia(): Int = mediaScanner.scanMedia()
+    suspend fun scanMedia(forceFullScan: Boolean = false): MediaScanResult =
+        mediaScanner.scanMedia(forceFullScan = forceFullScan)
 
     suspend fun cleanStaleRecords(): Int = mediaScanner.cleanStaleRecords()
 
