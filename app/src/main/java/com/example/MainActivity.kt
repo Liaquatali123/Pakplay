@@ -203,9 +203,9 @@ fun MainAppScaffold(
                 ) {
                     NavigationBar(
                         containerColor = Color.Transparent,
+                        windowInsets = androidx.compose.material3.NavigationBarDefaults.windowInsets,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(68.dp)
                             .testTag("bottom_nav_bar")
                     ) {
                         bottomNavItems.forEach { item ->

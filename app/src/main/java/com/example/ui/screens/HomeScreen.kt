@@ -116,7 +116,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 80.dp)
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             // Header: Brand & Scan button
             item {
@@ -413,7 +413,7 @@ fun HomeScreen(
                     EmptyStateView(
                         icon = Icons.Default.VideoLibrary,
                         title = "No Videos Found",
-                        description = "Tap Scan to search your device for local videos or load cinema samples.",
+                        description = "Scan your device to find and play local video files.",
                         actionButtonText = "Scan Videos",
                         onActionClick = { viewModel.scanMedia() }
                     )

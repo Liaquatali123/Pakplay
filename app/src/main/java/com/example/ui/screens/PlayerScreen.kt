@@ -96,6 +96,7 @@ import androidx.media3.ui.PlayerView
 import com.example.data.local.entity.VideoEntity
 import com.example.player.AspectRatioMode
 import com.example.ui.components.AspectRatioDialog
+import com.example.ui.components.AudioTrackSelectorDialog
 import com.example.ui.components.GestureOverlay
 import com.example.ui.components.PlaybackSpeedDialog
 import com.example.ui.components.ResumePlaybackDialog
@@ -124,6 +125,7 @@ fun PlayerScreen(
 
     val showResumeDialog by playerViewModel.showResumeDialog.collectAsStateWithLifecycle()
     val showSpeedDialog by playerViewModel.showSpeedDialog.collectAsStateWithLifecycle()
+    val showAudioTrackDialog by playerViewModel.showAudioTrackDialog.collectAsStateWithLifecycle()
     val showTrackDialog by playerViewModel.showTrackDialog.collectAsStateWithLifecycle()
     val showAspectRatioDialog by playerViewModel.showAspectRatioDialog.collectAsStateWithLifecycle()
     val showVideoInfoDialog by playerViewModel.showVideoInfoDialog.collectAsStateWithLifecycle()
@@ -443,6 +445,32 @@ fun PlayerScreen(
                             )
                         }
 
+                        // Audio Tracks Button (Dedicated Multi-Audio Track Switching)
+                        IconButton(
+                            onClick = { playerViewModel.openAudioTrackDialog() },
+                            modifier = Modifier.size(36.dp).testTag("audio_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Audiotrack,
+                                contentDescription = "Audio Tracks",
+                                tint = if (playerUiState.audioTracks.size > 1) CyanNeon else Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Subtitles & Track Settings
+                        IconButton(
+                            onClick = { playerViewModel.openTrackDialog() },
+                            modifier = Modifier.size(36.dp).testTag("tracks_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Subtitles,
+                                contentDescription = "Subtitles & Tracks",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
                         // Aspect Ratio Button
                         IconButton(
                             onClick = { playerViewModel.openAspectRatioDialog() },
@@ -451,19 +479,6 @@ fun PlayerScreen(
                             Icon(
                                 imageVector = Icons.Default.AspectRatio,
                                 contentDescription = "Aspect Ratio",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-
-                        // Tracks Button (Audio/Subtitle)
-                        IconButton(
-                            onClick = { playerViewModel.openTrackDialog() },
-                            modifier = Modifier.size(36.dp).testTag("tracks_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Audiotrack,
-                                contentDescription = "Tracks",
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -727,6 +742,15 @@ fun PlayerScreen(
             currentSpeed = playerUiState.playbackSpeed,
             onSpeedSelected = { speed -> playerViewModel.setPlaybackSpeed(speed) },
             onDismiss = { playerViewModel.closeSpeedDialog() }
+        )
+    }
+
+    if (showAudioTrackDialog) {
+        AudioTrackSelectorDialog(
+            audioTracks = playerUiState.audioTracks,
+            selectedIndex = playerUiState.selectedAudioTrackIndex,
+            onTrackSelected = { playerViewModel.selectAudioTrack(it) },
+            onDismiss = { playerViewModel.closeAudioTrackDialog() }
         )
     }
 

@@ -82,8 +82,14 @@ interface VideoDao {
     @Query("DELETE FROM videos WHERE id = :id")
     suspend fun deleteVideoById(id: Long)
 
+    @Query("DELETE FROM videos WHERE id IN (:ids)")
+    suspend fun deleteVideosByIds(ids: List<Long>)
+
     @Query("DELETE FROM videos WHERE path NOT IN (:currentPaths)")
     suspend fun deleteStaleVideos(currentPaths: List<String>)
+
+    @Query("DELETE FROM videos")
+    suspend fun deleteAllVideos()
 
     @Query("SELECT * FROM videos")
     suspend fun getAllVideosList(): List<VideoEntity>

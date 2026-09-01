@@ -136,6 +136,21 @@ class AppSettings(context: Context) {
         _settings.value = _settings.value.copy(isGridView = isGrid)
     }
 
+    fun saveVideoAudioTrack(videoPath: String, trackName: String, language: String?, trackIndex: Int) {
+        prefs.edit()
+            .putString("audio_name_${videoPath.hashCode()}", trackName)
+            .putString("audio_lang_${videoPath.hashCode()}", language ?: "")
+            .putInt("audio_idx_${videoPath.hashCode()}", trackIndex)
+            .apply()
+    }
+
+    fun getSavedVideoAudioTrack(videoPath: String): Triple<String, String, Int>? {
+        val name = prefs.getString("audio_name_${videoPath.hashCode()}", null) ?: return null
+        val lang = prefs.getString("audio_lang_${videoPath.hashCode()}", "") ?: ""
+        val idx = prefs.getInt("audio_idx_${videoPath.hashCode()}", 0)
+        return Triple(name, lang, idx)
+    }
+
     companion object {
         private const val KEY_PLAYBACK_SPEED = "pref_playback_speed"
         private const val KEY_GESTURES = "pref_gestures_enabled"

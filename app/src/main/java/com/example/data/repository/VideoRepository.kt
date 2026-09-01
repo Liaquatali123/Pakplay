@@ -27,6 +27,8 @@ class VideoRepository(
 
     suspend fun scanMedia(): Int = mediaScanner.scanMedia()
 
+    suspend fun cleanStaleRecords(): Int = mediaScanner.cleanStaleRecords()
+
     fun getVideosByFolder(folder: String): Flow<List<VideoEntity>> = videoDao.getVideosByFolder(folder)
 
     fun searchVideos(query: String): Flow<List<VideoEntity>> = videoDao.searchVideos(query)

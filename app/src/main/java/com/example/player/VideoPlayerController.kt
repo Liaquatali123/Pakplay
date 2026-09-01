@@ -27,6 +27,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.example.data.local.entity.PlaybackSettingsEntity
 import com.example.data.local.entity.VideoEntity
+import com.example.data.preferences.AppSettings
 import com.example.data.repository.VideoRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -39,12 +40,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Locale
 
 @OptIn(UnstableApi::class)
 class VideoPlayerController(
     private val context: Context,
     private val repository: VideoRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val appSettings: AppSettings? = null
 ) {
     private var exoPlayer: ExoPlayer? = null
     private var trackSelector: DefaultTrackSelector? = null
@@ -57,6 +60,7 @@ class VideoPlayerController(
     private var gestureNoticeJob: Job? = null
     private var controlsHideJob: Job? = null
     private var currentVideoEntity: VideoEntity? = null
+    private var hasPendingAudioRestore = true
 
     private val maxStreamVolume: Int
         get() = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
@@ -169,6 +173,7 @@ class VideoPlayerController(
     fun prepareAndPlay(video: VideoEntity, startPositionMs: Long? = null) {
         val player = getPlayer()
         currentVideoEntity = video
+        hasPendingAudioRestore = true
 
         _uiState.value = _uiState.value.copy(
             currentVideoId = video.id,
@@ -373,23 +378,105 @@ class VideoPlayerController(
 
     fun selectAudioTrack(index: Int) {
         val selector = trackSelector ?: return
-        val parametersBuilder = selector.buildUponParameters()
         val tracks = exoPlayer?.currentTracks ?: return
 
-        var audioGroupIndex = 0
-        for (trackGroup in tracks.groups) {
-            if (trackGroup.type == C.TRACK_TYPE_AUDIO) {
-                if (audioGroupIndex == index) {
-                    parametersBuilder.setOverrideForType(
-                        TrackSelectionOverride(trackGroup.mediaTrackGroup, 0)
-                    )
-                    selector.setParameters(parametersBuilder)
-                    _uiState.value = _uiState.value.copy(selectedAudioTrackIndex = index)
-                    showGestureNotice("Audio track switched", "audiotrack")
-                    return
+        var globalIndex = 0
+        for (group in tracks.groups) {
+            if (group.type == C.TRACK_TYPE_AUDIO) {
+                for (trackIndex in 0 until group.length) {
+                    if (globalIndex == index) {
+                        val override = TrackSelectionOverride(group.mediaTrackGroup, listOf(trackIndex))
+                        val parametersBuilder = selector.buildUponParameters()
+                            .setOverrideForType(override)
+                            .setTrackTypeDisabled(C.TRACK_TYPE_AUDIO, false)
+                        selector.setParameters(parametersBuilder)
+
+                        val updatedList = _uiState.value.audioTracks.mapIndexed { idx, track ->
+                            track.copy(isSelected = (idx == index))
+                        }
+                        _uiState.value = _uiState.value.copy(
+                            selectedAudioTrackIndex = index,
+                            audioTracks = updatedList
+                        )
+
+                        // Save audio preference for this video
+                        currentVideoEntity?.let { video ->
+                            val track = updatedList.getOrNull(index)
+                            if (track != null) {
+                                appSettings?.saveVideoAudioTrack(video.path, track.name, track.language, index)
+                            }
+                        }
+
+                        val trackName = updatedList.getOrNull(index)?.name ?: "Track ${index + 1}"
+                        showGestureNotice("Audio: $trackName", "audiotrack")
+                        return
+                    }
+                    globalIndex++
                 }
-                audioGroupIndex++
             }
+        }
+    }
+
+    private fun resolveAudioTrackName(format: Format, trackNumber: Int): Pair<String, String?> {
+        val rawLabel = format.label?.trim()
+        val rawLang = format.language?.trim()
+
+        val readableLanguage = if (!rawLang.isNullOrBlank() && !rawLang.equals("und", ignoreCase = true) && !rawLang.equals("zxx", ignoreCase = true)) {
+            try {
+                val loc = if (rawLang.length == 2 || rawLang.length == 3) {
+                    Locale(rawLang)
+                } else {
+                    Locale.forLanguageTag(rawLang)
+                }
+                val display = loc.getDisplayLanguage(Locale.ENGLISH)
+                if (display.isNotBlank() && !display.equals("und", ignoreCase = true)) {
+                    display.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString() }
+                } else {
+                    rawLang.uppercase()
+                }
+            } catch (e: Exception) {
+                rawLang.uppercase()
+            }
+        } else {
+            null
+        }
+
+        val channelDesc = when (format.channelCount) {
+            1 -> "Mono"
+            2 -> "Stereo"
+            6 -> "5.1"
+            8 -> "7.1"
+            else -> if (format.channelCount > 2) "${format.channelCount}ch" else null
+        }
+
+        val baseName = when {
+            !rawLabel.isNullOrBlank() -> rawLabel
+            !readableLanguage.isNullOrBlank() -> readableLanguage
+            else -> "Audio Track $trackNumber"
+        }
+
+        val fullName = if (channelDesc != null && !baseName.contains(channelDesc, ignoreCase = true)) {
+            "$baseName • $channelDesc"
+        } else {
+            baseName
+        }
+
+        return Pair(fullName, readableLanguage)
+    }
+
+    private fun restoreSavedAudioTrack(videoPath: String, audioList: List<TrackInfo>) {
+        if (audioList.size <= 1) return
+        val saved = appSettings?.getSavedVideoAudioTrack(videoPath) ?: return
+        val (savedName, savedLang, savedIdx) = saved
+
+        val targetIndex = audioList.indexOfFirst { it.name == savedName }
+            .takeIf { it != -1 }
+            ?: audioList.indexOfFirst { !it.language.isNullOrBlank() && it.language.equals(savedLang, ignoreCase = true) }
+                .takeIf { it != -1 }
+            ?: if (savedIdx in audioList.indices) savedIdx else -1
+
+        if (targetIndex != -1 && targetIndex != _uiState.value.selectedAudioTrackIndex) {
+            selectAudioTrack(targetIndex)
         }
     }
 
@@ -445,40 +532,53 @@ class VideoPlayerController(
         val videoQualities = mutableListOf<VideoQualityInfo>()
 
         var audioIdx = 0
+        var selectedAudioIdx = 0
         var subIdx = 0
         var vidIdx = 0
 
         for (group in tracks.groups) {
             when (group.type) {
                 C.TRACK_TYPE_AUDIO -> {
-                    val format = group.getTrackFormat(0)
-                    val label = format.label ?: format.language ?: "Audio Track ${audioIdx + 1}"
-                    audioList.add(
-                        TrackInfo(
-                            id = format.id ?: "audio_$audioIdx",
-                            index = audioIdx,
-                            name = label,
-                            language = format.language,
-                            isSelected = group.isSelected,
-                            format = format
+                    for (i in 0 until group.length) {
+                        val format = group.getTrackFormat(i)
+                        val (label, language) = resolveAudioTrackName(format, audioIdx + 1)
+                        val isTrackSel = group.isTrackSelected(i)
+                        if (isTrackSel) {
+                            selectedAudioIdx = audioIdx
+                        }
+                        audioList.add(
+                            TrackInfo(
+                                id = format.id ?: "audio_${audioIdx}_$i",
+                                index = audioIdx,
+                                name = label,
+                                language = language,
+                                isSelected = isTrackSel,
+                                format = format
+                            )
                         )
-                    )
-                    audioIdx++
+                        audioIdx++
+                    }
                 }
                 C.TRACK_TYPE_TEXT -> {
-                    val format = group.getTrackFormat(0)
-                    val label = format.label ?: format.language ?: "Subtitle ${subIdx + 1}"
-                    subList.add(
-                        TrackInfo(
-                            id = format.id ?: "sub_$subIdx",
-                            index = subIdx,
-                            name = label,
-                            language = format.language,
-                            isSelected = group.isSelected,
-                            format = format
+                    for (i in 0 until group.length) {
+                        val format = group.getTrackFormat(i)
+                        val label = format.label?.takeIf { it.isNotBlank() }
+                            ?: format.language?.takeIf { it.isNotBlank() && it != "und" }?.let {
+                                try { Locale(it).getDisplayLanguage(Locale.ENGLISH).replaceFirstChar { c -> c.uppercase() } } catch (e: Exception) { it }
+                            }
+                            ?: "Subtitle ${subIdx + 1}"
+                        subList.add(
+                            TrackInfo(
+                                id = format.id ?: "sub_${subIdx}_$i",
+                                index = subIdx,
+                                name = label,
+                                language = format.language,
+                                isSelected = group.isTrackSelected(i),
+                                format = format
+                            )
                         )
-                    )
-                    subIdx++
+                        subIdx++
+                    }
                 }
                 C.TRACK_TYPE_VIDEO -> {
                     for (i in 0 until group.length) {
@@ -502,9 +602,18 @@ class VideoPlayerController(
 
         _uiState.value = _uiState.value.copy(
             audioTracks = audioList,
+            selectedAudioTrackIndex = selectedAudioIdx,
             subtitleTracks = subList,
             videoQualities = videoQualities
         )
+
+        // Restore saved audio track if available and not yet applied
+        if (hasPendingAudioRestore && audioList.isNotEmpty()) {
+            hasPendingAudioRestore = false
+            currentVideoEntity?.let { video ->
+                restoreSavedAudioTrack(video.path, audioList)
+            }
+        }
     }
 
     private fun startProgressTracker() {

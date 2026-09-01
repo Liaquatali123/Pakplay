@@ -178,6 +178,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _isScanning.value = true
             try {
                 repository.scanMedia()
+                repository.cleanStaleRecords()
             } catch (e: Exception) {
                 Log.e("MainViewModel", "Scan error", e)
             } finally {

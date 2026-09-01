@@ -29,7 +29,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     val playerController = VideoPlayerController(
         context = application.applicationContext,
         repository = repository,
-        scope = viewModelScope
+        scope = viewModelScope,
+        appSettings = appSettings
     )
 
     val playerUiState: StateFlow<PlayerUiState> = playerController.uiState
@@ -45,6 +46,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _showSpeedDialog = MutableStateFlow(false)
     val showSpeedDialog: StateFlow<Boolean> = _showSpeedDialog.asStateFlow()
+
+    private val _showAudioTrackDialog = MutableStateFlow(false)
+    val showAudioTrackDialog: StateFlow<Boolean> = _showAudioTrackDialog.asStateFlow()
 
     private val _showTrackDialog = MutableStateFlow(false)
     val showTrackDialog: StateFlow<Boolean> = _showTrackDialog.asStateFlow()
@@ -153,6 +157,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun selectAudioTrack(index: Int) {
         playerController.selectAudioTrack(index)
+        _showAudioTrackDialog.value = false
         _showTrackDialog.value = false
     }
 
@@ -187,6 +192,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun openSpeedDialog() { _showSpeedDialog.value = true }
     fun closeSpeedDialog() { _showSpeedDialog.value = false }
+
+    fun openAudioTrackDialog() { _showAudioTrackDialog.value = true }
+    fun closeAudioTrackDialog() { _showAudioTrackDialog.value = false }
 
     fun openTrackDialog() { _showTrackDialog.value = true }
     fun closeTrackDialog() { _showTrackDialog.value = false }
