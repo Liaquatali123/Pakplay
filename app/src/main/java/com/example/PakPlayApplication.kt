@@ -1,0 +1,61 @@
+package com.example
+
+import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.os.Build
+import com.example.data.local.AppDatabase
+import com.example.data.preferences.AppSettings
+import com.example.data.repository.VideoRepository
+import com.example.data.scanner.MediaScanner
+
+class PakPlayApplication : Application() {
+
+    lateinit var database: AppDatabase
+        private set
+
+    lateinit var repository: VideoRepository
+        private set
+
+    lateinit var appSettings: AppSettings
+        private set
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+
+        database = AppDatabase.getInstance(this)
+        appSettings = AppSettings(this)
+        val mediaScanner = MediaScanner(this, database.videoDao())
+        repository = VideoRepository(
+            videoDao = database.videoDao(),
+            playlistDao = database.playlistDao(),
+            playbackSettingsDao = database.playbackSettingsDao(),
+            mediaScanner = mediaScanner
+        )
+
+        createNotificationChannels()
+    }
+
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val playbackChannel = NotificationChannel(
+                CHANNEL_PLAYBACK_ID,
+                "Video Playback",
+                NotificationManager.IMPORTANCE_LOW
+            ).apply {
+                description = "Controls and status for background video playback"
+                setShowBadge(false)
+            }
+
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.createNotificationChannel(playbackChannel)
+        }
+    }
+
+    companion object {
+        const val CHANNEL_PLAYBACK_ID = "pakplay_playback_channel"
+        lateinit var instance: PakPlayApplication
+            private set
+    }
+}
