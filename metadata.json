@@ -1,6 +1,6 @@
 {
-  "name": "PakPlay",
-  "description": "High-performance offline-first video player with gesture controls, multi-track audio, subtitle support, and playlist management.",
+  "name": "Veyra Player",
+  "description": "Professional high-performance offline-first video player with hardware decoding, gesture controls, multi-track audio, subtitle support, and playlist management.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

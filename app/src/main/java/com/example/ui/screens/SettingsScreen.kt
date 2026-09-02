@@ -228,11 +228,11 @@ fun SettingsScreen(
                 )
             }
 
-            // About PakPlay Section
-            SettingsSectionCard(title = "About PakPlay", icon = Icons.Default.Info) {
+            // About Veyra Section
+            SettingsSectionCard(title = "About Veyra", icon = Icons.Default.Info) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     Text(
-                        text = "PakPlay Video Player v1.0.0",
+                        text = "Veyra Player v1.0.0",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface

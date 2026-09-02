@@ -74,5 +74,6 @@ data class PlayerUiState(
     val autoPlayNext: Boolean = true,
     val gestureNoticeText: String? = null,
     val gestureNoticeIcon: String? = null,
-    val isScreenAwake: Boolean = true
+    val isScreenAwake: Boolean = true,
+    val decoderInfo: String = "Hardware Decoding"
 )

@@ -117,7 +117,7 @@ fun SplashScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "PakPlay",
+                text = "VEYRA",
                 fontSize = 34.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Color.White,

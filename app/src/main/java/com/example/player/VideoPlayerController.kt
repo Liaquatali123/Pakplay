@@ -151,18 +151,12 @@ class VideoPlayerController(
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                val errorMsg = when (error.errorCode) {
-                    PlaybackException.ERROR_CODE_IO_FILE_NOT_FOUND -> "Video file not found or inaccessible."
-                    PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED -> "Network connection failed."
-                    PlaybackException.ERROR_CODE_DECODER_INIT_FAILED -> "Unable to decode video format on this device."
-                    PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED -> "Unsupported media container format."
-                    else -> "Playback error: ${error.localizedMessage ?: "Unknown error"}"
-                }
-                Log.e("VideoPlayerController", "Player error: $errorMsg", error)
+                val classification = PlaybackRecoveryManager.classifyError(error)
+                Log.e("VideoPlayerController", "Player error: ${classification.userFriendlyMessage}", error)
                 _uiState.value = _uiState.value.copy(
                     isBuffering = false,
                     isPlaying = false,
-                    errorMessage = errorMsg
+                    errorMessage = classification.userFriendlyMessage
                 )
             }
         })
@@ -536,6 +530,7 @@ class VideoPlayerController(
         var subIdx = 0
         var vidIdx = 0
 
+        var activeDecoderInfo = "Hardware Decoding"
         for (group in tracks.groups) {
             when (group.type) {
                 C.TRACK_TYPE_AUDIO -> {
@@ -584,6 +579,7 @@ class VideoPlayerController(
                     for (i in 0 until group.length) {
                         val format = group.getTrackFormat(i)
                         val res = if (format.width > 0 && format.height > 0) "${format.width}x${format.height}" else "Auto"
+                        val isSel = group.isTrackSelected(i)
                         videoQualities.add(
                             VideoQualityInfo(
                                 index = vidIdx,
@@ -591,9 +587,31 @@ class VideoPlayerController(
                                 bitrate = format.bitrate.toLong(),
                                 frameRate = format.frameRate,
                                 codec = format.sampleMimeType,
-                                isSelected = group.isTrackSelected(i)
+                                isSelected = isSel
                             )
                         )
+                        if (isSel) {
+                            val h = format.height
+                            val resLabel = when {
+                                h >= 4320 -> "8K"
+                                h >= 2160 -> "4K"
+                                h >= 1440 -> "1440p"
+                                h >= 1080 -> "1080p"
+                                h >= 720 -> "720p"
+                                h > 0 -> "${h}p"
+                                else -> "HD"
+                            }
+                            val mime = format.sampleMimeType ?: ""
+                            val codecLabel = when {
+                                mime.contains("hevc", ignoreCase = true) -> "HEVC"
+                                mime.contains("avc", ignoreCase = true) -> "H.264"
+                                mime.contains("vp9", ignoreCase = true) -> "VP9"
+                                mime.contains("av01", ignoreCase = true) -> "AV1"
+                                mime.contains("mp4", ignoreCase = true) -> "MPEG-4"
+                                else -> "Video"
+                            }
+                            activeDecoderInfo = "$resLabel • $codecLabel • Hardware Decoding"
+                        }
                         vidIdx++
                     }
                 }
@@ -604,7 +622,8 @@ class VideoPlayerController(
             audioTracks = audioList,
             selectedAudioTrackIndex = selectedAudioIdx,
             subtitleTracks = subList,
-            videoQualities = videoQualities
+            videoQualities = videoQualities,
+            decoderInfo = activeDecoderInfo
         )
 
         // Restore saved audio track if available and not yet applied

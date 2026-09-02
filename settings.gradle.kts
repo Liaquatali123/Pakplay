@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "PakPlay"
+rootProject.name = "Veyra Player"
 
 include(":app")

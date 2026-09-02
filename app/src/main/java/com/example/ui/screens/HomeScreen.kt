@@ -155,7 +155,7 @@ fun HomeScreen(
 
                         Column {
                             Text(
-                                text = "PakPlay",
+                                text = "VEYRA",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.onBackground

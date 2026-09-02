@@ -48,9 +48,9 @@ class ExampleRobolectricTest {
     }
 
     @Test
-    fun `read string from context returns PakPlay`() {
+    fun `read string from context returns Veyra Player`() {
         val appName = context.getString(R.string.app_name)
-        assertEquals("PakPlay", appName)
+        assertEquals("Veyra Player", appName)
     }
 
     @Test
