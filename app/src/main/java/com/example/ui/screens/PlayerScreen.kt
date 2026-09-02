@@ -782,12 +782,21 @@ fun PlayerScreen(
             VideoInfoDialog(
                 video = currentVid,
                 onDismiss = { playerViewModel.closeVideoInfoDialog() },
-                onPlay = {},
-                onShare = { playerViewModel.appSettings },
+                onPlay = {
+                    playerViewModel.closeVideoInfoDialog()
+                    playerViewModel.playVideo(currentVid, playlistVideos)
+                },
+                onShare = {
+                    playerViewModel.shareVideo(context, currentVid)
+                },
                 onRename = {},
-                onFavoriteToggle = { playerViewModel.repository },
+                onFavoriteToggle = {
+                    playerViewModel.toggleFavorite(currentVid)
+                },
                 onAddToPlaylist = {},
-                onDelete = {}
+                onDelete = {
+                    playerViewModel.deleteVideo(currentVid)
+                }
             )
         }
     }

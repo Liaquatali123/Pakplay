@@ -33,13 +33,18 @@ data class VideoEntity(
     val mimeType: String = "video/*"
 ) {
     val resolutionLabel: String
-        get() = when {
-            width >= 3840 || height >= 2160 -> "4K UHD"
-            width >= 2560 || height >= 1440 -> "2K QHD"
-            width >= 1920 || height >= 1080 -> "1080p FHD"
-            width >= 1280 || height >= 720 -> "720p HD"
-            width > 0 && height > 0 -> "${width}x${height}"
-            else -> "HD"
+        get() {
+            val maxDim = maxOf(width, height)
+            val minDim = minOf(width, height)
+            return when {
+                maxDim >= 3840 && minDim >= 2160 -> "4K UHD"
+                maxDim >= 2560 && minDim >= 1440 -> "1440p QHD"
+                maxDim >= 1920 && minDim >= 1080 -> "1080p FHD"
+                maxDim >= 1280 && minDim >= 720 -> "720p HD"
+                maxDim >= 854 && minDim >= 480 -> "480p"
+                width > 0 && height > 0 -> "${width}x${height}"
+                else -> "HD"
+            }
         }
 
     val formattedDuration: String

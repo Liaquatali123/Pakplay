@@ -4,12 +4,15 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.decode.VideoFrameDecoder
 import com.example.data.local.AppDatabase
 import com.example.data.preferences.AppSettings
 import com.example.data.repository.VideoRepository
 import com.example.data.scanner.MediaScanner
 
-class PakPlayApplication : Application() {
+class PakPlayApplication : Application(), ImageLoaderFactory {
 
     lateinit var database: AppDatabase
         private set
@@ -19,6 +22,15 @@ class PakPlayApplication : Application() {
 
     lateinit var appSettings: AppSettings
         private set
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .components {
+                add(VideoFrameDecoder.Factory())
+            }
+            .crossfade(true)
+            .build()
+    }
 
     override fun onCreate() {
         super.onCreate()

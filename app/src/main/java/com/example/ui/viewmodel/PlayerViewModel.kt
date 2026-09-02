@@ -205,6 +205,34 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun openVideoInfoDialog() { _showVideoInfoDialog.value = true }
     fun closeVideoInfoDialog() { _showVideoInfoDialog.value = false }
 
+    fun toggleFavorite(video: VideoEntity) {
+        viewModelScope.launch {
+            repository.toggleFavorite(video.id, video.isFavorite)
+        }
+    }
+
+    fun deleteVideo(video: VideoEntity) {
+        viewModelScope.launch {
+            repository.deleteVideo(video.id)
+            closeVideoInfoDialog()
+            playNext()
+        }
+    }
+
+    fun shareVideo(context: Context, video: VideoEntity) {
+        try {
+            val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = video.mimeType.ifEmpty { "video/*" }
+                val uri = android.net.Uri.parse(video.path)
+                putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Video"))
+        } catch (e: Exception) {
+            // ignore
+        }
+    }
+
     fun enterPictureInPicture(activity: Activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try {
