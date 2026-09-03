@@ -134,7 +134,7 @@ fun PlayerScreen(
     var sliderPosition by remember { mutableFloatStateOf(0f) }
     var isUserDraggingSlider by remember { mutableStateOf(false) }
 
-    // Immersive Fullscreen and Screen On
+    // Immersive Fullscreen, Screen On, and Volume Control Stream
     DisposableEffect(Unit) {
         val window = activity?.window
         if (window != null) {
@@ -142,6 +142,7 @@ fun PlayerScreen(
             insetsController.systemBarsBehavior = androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             insetsController.hide(androidx.core.view.WindowInsetsCompat.Type.systemBars())
         }
+        activity?.volumeControlStream = android.media.AudioManager.STREAM_MUSIC
         if (settings.keepScreenOn) {
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
@@ -216,10 +217,10 @@ fun PlayerScreen(
             onDoubleTapLeft = { playerViewModel.seekRelative(-settings.doubleTapSeekSeconds * 1000L) },
             onDoubleTapRight = { playerViewModel.seekRelative(settings.doubleTapSeekSeconds * 1000L) },
             onDoubleTapCenter = { playerViewModel.togglePlayPause() },
-            onVerticalSwipeLeft = { delta ->
-                activity?.let { playerViewModel.adjustBrightness(it, delta) }
+            onBrightnessDelta = { delta ->
+                activity?.let { playerViewModel.changeBrightnessBy(it, delta) }
             },
-            onVerticalSwipeRight = { delta -> playerViewModel.adjustVolume(delta) },
+            onVolumeDelta = { delta -> playerViewModel.changeVolumeBy(delta) },
             onHorizontalSwipeSeek = { deltaMs -> playerViewModel.seekRelative(deltaMs) },
             onZoomChange = { scale -> playerViewModel.setZoomScale(scale) }
         )

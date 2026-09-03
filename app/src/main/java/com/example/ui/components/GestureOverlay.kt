@@ -3,6 +3,7 @@ package com.example.ui.components
 import android.app.Activity
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -26,8 +27,8 @@ fun GestureOverlay(
     onDoubleTapLeft: () -> Unit,
     onDoubleTapRight: () -> Unit,
     onDoubleTapCenter: () -> Unit,
-    onVerticalSwipeLeft: (Float) -> Unit, // Brightness
-    onVerticalSwipeRight: (Float) -> Unit, // Volume
+    onBrightnessDelta: (Float) -> Unit, // Brightness
+    onVolumeDelta: (Int) -> Unit, // Volume
     onHorizontalSwipeSeek: (Long) -> Unit, // Seek in Ms
     onZoomChange: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -88,30 +89,29 @@ fun GestureOverlay(
             }
             .pointerInput(gesturesEnabled) {
                 if (gesturesEnabled) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val changes = event.changes
-                            if (changes.size == 1) {
-                                val change = changes[0]
-                                val pos = change.position
-                                val prevPos = change.previousPosition
-                                val deltaY = prevPos.y - pos.y // positive = swipe up
-                                val height = size.height.toFloat()
-
-                                if (change.pressed && height > 0 && kotlin.math.abs(deltaY) > 2f) {
-                                    val deltaPercent = deltaY / height
-                                    if (pos.x < size.width * 0.5f) {
-                                        // Left side: Brightness
-                                        onVerticalSwipeLeft(deltaPercent)
-                                    } else {
-                                        // Right side: Volume
-                                        onVerticalSwipeRight(deltaPercent)
-                                    }
+                    var accumulatedY = 0f
+                    detectVerticalDragGestures(
+                        onDragStart = { accumulatedY = 0f },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            accumulatedY += dragAmount // positive = down, negative = up
+                            val threshold = 25f // pixels per step notch
+                            if (kotlin.math.abs(accumulatedY) >= threshold) {
+                                val steps = (accumulatedY / threshold).toInt()
+                                accumulatedY %= threshold
+                                val isLeft = change.position.x < size.width * 0.5f
+                                if (isLeft) {
+                                    // Swipe up (negative accumulatedY) increases brightness
+                                    val brightnessDelta = -steps * 0.05f
+                                    onBrightnessDelta(brightnessDelta)
+                                } else {
+                                    // Swipe up (negative accumulatedY) increases volume (+1 per step)
+                                    val volumeDelta = -steps
+                                    onVolumeDelta(volumeDelta)
                                 }
                             }
                         }
-                    }
+                    )
                 }
             }
     ) {

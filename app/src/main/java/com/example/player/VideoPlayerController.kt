@@ -318,16 +318,11 @@ class VideoPlayerController(
         }
     }
 
-    // Volume gesture adjustment (0f..1f delta)
-    fun adjustVolume(deltaPercent: Float) {
+    // Volume step adjustment (+1 or -1)
+    fun changeVolumeBy(delta: Int) {
         val maxVol = maxStreamVolume
         val curVol = currentStreamVolume
-        val rawNew = curVol + (deltaPercent * maxVol * 1.5f)
-        val newLevel = when {
-            deltaPercent > 0f && rawNew <= curVol -> (curVol + 1).coerceAtMost(maxVol)
-            deltaPercent < 0f && rawNew >= curVol -> (curVol - 1).coerceAtLeast(0)
-            else -> rawNew.roundToInt().coerceIn(0, maxVol)
-        }
+        val newLevel = (curVol + delta).coerceIn(0, maxVol)
         try {
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newLevel, 0)
         } catch (e: Exception) {
@@ -343,8 +338,8 @@ class VideoPlayerController(
         showGestureNotice("Volume: $percentText", if (newLevel == 0) "volume_off" else "volume_up")
     }
 
-    // Brightness gesture adjustment (0f..1f delta)
-    fun adjustBrightness(activity: Activity, deltaPercent: Float) {
+    // Brightness step adjustment
+    fun changeBrightnessBy(activity: Activity, delta: Float) {
         try {
             val layoutParams = activity.window.attributes
             var currentBrightness = layoutParams.screenBrightness
@@ -355,7 +350,7 @@ class VideoPlayerController(
                     0.5f
                 }
             }
-            val newBrightness = (currentBrightness + deltaPercent).coerceIn(0.01f, 1.0f)
+            val newBrightness = (currentBrightness + delta).coerceIn(0.01f, 1.0f)
             layoutParams.screenBrightness = newBrightness
             activity.window.attributes = layoutParams
 

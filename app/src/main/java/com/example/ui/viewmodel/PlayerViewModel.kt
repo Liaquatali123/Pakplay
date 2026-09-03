@@ -147,9 +147,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun toggleControls() = playerController.toggleControls()
 
-    fun adjustVolume(deltaPercent: Float) = playerController.adjustVolume(deltaPercent)
+    fun changeVolumeBy(delta: Int) = playerController.changeVolumeBy(delta)
 
-    fun adjustBrightness(activity: Activity, deltaPercent: Float) = playerController.adjustBrightness(activity, deltaPercent)
+    fun changeBrightnessBy(activity: Activity, delta: Float) = playerController.changeBrightnessBy(activity, delta)
 
     fun setZoomScale(scale: Float) = playerController.setZoomScale(scale)
 
