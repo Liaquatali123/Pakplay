@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(UnstableApi::class)
 class VideoPlayerController(
@@ -321,7 +322,12 @@ class VideoPlayerController(
     fun adjustVolume(deltaPercent: Float) {
         val maxVol = maxStreamVolume
         val curVol = currentStreamVolume
-        val newLevel = (curVol + (deltaPercent * maxVol)).toInt().coerceIn(0, maxVol)
+        val rawNew = curVol + (deltaPercent * maxVol * 1.5f)
+        val newLevel = when {
+            deltaPercent > 0f && rawNew <= curVol -> (curVol + 1).coerceAtMost(maxVol)
+            deltaPercent < 0f && rawNew >= curVol -> (curVol - 1).coerceAtLeast(0)
+            else -> rawNew.roundToInt().coerceIn(0, maxVol)
+        }
         try {
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newLevel, 0)
         } catch (e: Exception) {
