@@ -47,7 +47,8 @@ fun SearchBarHeader(
     onToggleView: () -> Unit,
     onOpenSortFilter: () -> Unit,
     hasActiveFilters: Boolean = false,
-    placeholder: String = "Search videos, folders...",
+    placeholder: String = "Search videos...",
+    showViewToggle: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
@@ -55,7 +56,7 @@ fun SearchBarHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         OutlinedTextField(
@@ -63,40 +64,49 @@ fun SearchBarHeader(
             onValueChange = onSearchQueryChange,
             modifier = Modifier
                 .weight(1f)
-                .height(52.dp)
                 .testTag("search_text_field"),
             placeholder = {
                 Text(
                     text = placeholder,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    fontSize = 14.sp
+                    fontSize = 14.sp,
+                    maxLines = 1
                 )
             },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = "Search",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
                 )
             },
             trailingIcon = {
                 if (searchQuery.isNotEmpty()) {
-                    IconButton(onClick = { onSearchQueryChange("") }) {
+                    IconButton(
+                        onClick = { onSearchQueryChange("") },
+                        modifier = Modifier.size(36.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = "Clear",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
                         )
                     }
                 }
             },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 14.sp
+            ),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
                 focusedBorderColor = CyanNeon,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                 cursorColor = CyanNeon
             ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -113,7 +123,7 @@ fun SearchBarHeader(
             IconButton(
                 onClick = onOpenSortFilter,
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(46.dp)
                     .testTag("sort_filter_button")
             ) {
                 if (hasActiveFilters) {
@@ -128,37 +138,42 @@ fun SearchBarHeader(
                         Icon(
                             imageVector = Icons.Default.FilterList,
                             contentDescription = "Filter & Sort",
-                            tint = CyanNeon
+                            tint = CyanNeon,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 } else {
                     Icon(
                         imageVector = Icons.Default.FilterList,
                         contentDescription = "Filter & Sort",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        if (showViewToggle) {
+            Spacer(modifier = Modifier.width(8.dp))
 
-        // Grid/List Toggle Button
-        Surface(
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            IconButton(
-                onClick = onToggleView,
-                modifier = Modifier
-                    .size(48.dp)
-                    .testTag("grid_list_toggle")
+            // Grid/List Toggle Button
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainer,
+                shape = RoundedCornerShape(12.dp)
             ) {
-                Icon(
-                    imageVector = if (isGridView) Icons.Default.ViewList else Icons.Default.GridView,
-                    contentDescription = "Toggle Grid/List",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                IconButton(
+                    onClick = onToggleView,
+                    modifier = Modifier
+                        .size(46.dp)
+                        .testTag("grid_list_toggle")
+                ) {
+                    Icon(
+                        imageVector = if (isGridView) Icons.Default.ViewList else Icons.Default.GridView,
+                        contentDescription = "Toggle Grid/List",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

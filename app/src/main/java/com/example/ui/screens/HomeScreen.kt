@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -97,6 +98,7 @@ fun HomeScreen(
     val isScanning by viewModel.isScanning.collectAsStateWithLifecycle()
     val isGridView by viewModel.isGridView.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val filteredVideos by viewModel.filteredVideos.collectAsStateWithLifecycle()
     val sortType by viewModel.sortType.collectAsStateWithLifecycle()
     val filterOptions by viewModel.filterOptions.collectAsStateWithLifecycle()
 
@@ -108,15 +110,15 @@ fun HomeScreen(
 
     val sortFilterSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    Scaffold(
-        modifier = modifier.fillMaxSize().testTag("home_screen"),
-        containerColor = MaterialTheme.colorScheme.background
-    ) { innerPadding ->
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .testTag("home_screen")
+    ) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 16.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = 110.dp)
         ) {
             // Header: Brand & Scan button
             item {
@@ -218,248 +220,297 @@ fun HomeScreen(
             item {
                 SearchBarHeader(
                     searchQuery = searchQuery,
-                    onSearchQueryChange = {
-                        viewModel.setSearchQuery(it)
-                        if (it.isNotEmpty()) {
-                            onNavigateToVideos()
-                        }
-                    },
+                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
                     isGridView = isGridView,
-                    onToggleView = { viewModel.toggleGridView() },
+                    onToggleView = {},
+                    showViewToggle = false,
                     onOpenSortFilter = { showSortFilterSheet = true },
-                    placeholder = "Search videos or folders..."
+                    placeholder = "Search videos..."
                 )
             }
 
-            // Continue Watching Carousel
-            if (continueWatching.isNotEmpty()) {
+            // Instant In-Place Search Results (when searching)
+            if (searchQuery.isNotBlank()) {
                 item {
-                    Column(modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 18.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Continue Watching",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "${continueWatching.size} in progress",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = CyanNeon,
-                                fontWeight = FontWeight.Medium
-                            )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Search Results (${filteredVideos.size})",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        TextButton(onClick = { viewModel.setSearchQuery("") }) {
+                            Text("Clear", color = CyanNeon, fontSize = 13.sp)
                         }
+                    }
+                }
 
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(continueWatching, key = { it.id }) { video ->
-                                ContinueWatchingCard(
-                                    video = video,
-                                    onClick = { onPlayVideo(video) }
+                if (filteredVideos.isEmpty()) {
+                    item {
+                        EmptyStateView(
+                            icon = Icons.Default.Search,
+                            title = "No Matching Videos",
+                            description = "No videos match \"$searchQuery\". Try checking your spelling.",
+                            actionButtonText = "Clear Search",
+                            onActionClick = { viewModel.setSearchQuery("") }
+                        )
+                    }
+                } else {
+                    items(filteredVideos, key = { "home_search_${it.id}" }) { video ->
+                        VideoCard(
+                            video = video,
+                            isGrid = false,
+                            isSelected = false,
+                            isSelectionMode = false,
+                            onClick = { onPlayVideo(video) },
+                            onLongClick = {},
+                            onFavoriteToggle = { viewModel.toggleFavorite(video) },
+                            onShare = { viewModel.shareVideo(context, video) },
+                            onRename = { videoToRename = video },
+                            onDelete = { viewModel.deleteVideo(video) },
+                            onAddToPlaylist = { selectedVideoForPlaylist = video },
+                            onShowInfo = { selectedVideoForInfo = video },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+            } else {
+                // Continue Watching Carousel
+                if (continueWatching.isNotEmpty()) {
+                    item {
+                        Column(modifier = Modifier.fillMaxWidth().padding(top = 10.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 18.dp, vertical = 6.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Continue Watching",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground
                                 )
+                                Text(
+                                    text = "${continueWatching.size} in progress",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = CyanNeon,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(continueWatching, key = { it.id }) { video ->
+                                    ContinueWatchingCard(
+                                        video = video,
+                                        onClick = { onPlayVideo(video) }
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            // Quick Category Cards Row
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    QuickCategoryButton(
-                        title = "Videos",
-                        count = "${allVideos.size}",
-                        icon = Icons.Default.VideoLibrary,
-                        tint = CyanNeon,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToVideos
-                    )
-                    QuickCategoryButton(
-                        title = "Folders",
-                        count = "${folderSummaries.size}",
-                        icon = Icons.Default.Folder,
-                        tint = PurpleElectric,
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToFolders
-                    )
-                    QuickCategoryButton(
-                        title = "Playlists",
-                        count = "${playlists.size}",
-                        icon = Icons.Default.PlaylistPlay,
-                        tint = Color(0xFFFFB300),
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToPlaylists
-                    )
-                    QuickCategoryButton(
-                        title = "Favorites",
-                        count = "${allVideos.count { it.isFavorite }}",
-                        icon = Icons.Default.Favorite,
-                        tint = Color(0xFFFF3366),
-                        modifier = Modifier.weight(1f),
-                        onClick = onNavigateToFavorites
-                    )
-                }
-            }
-
-            // Recently Played Section
-            if (recentlyPlayed.isNotEmpty()) {
+                // Quick Category Cards Row
                 item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(horizontal = 16.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text(
-                            text = "Recently Played",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
+                        QuickCategoryButton(
+                            title = "Videos",
+                            count = "${allVideos.size}",
+                            icon = Icons.Default.VideoLibrary,
+                            tint = CyanNeon,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToVideos
                         )
-                        TextButton(onClick = onNavigateToVideos) {
-                            Text("See All", color = CyanNeon, fontSize = 13.sp)
-                        }
+                        QuickCategoryButton(
+                            title = "Folders",
+                            count = "${folderSummaries.size}",
+                            icon = Icons.Default.Folder,
+                            tint = PurpleElectric,
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToFolders
+                        )
+                        QuickCategoryButton(
+                            title = "Playlists",
+                            count = "${playlists.size}",
+                            icon = Icons.Default.PlaylistPlay,
+                            tint = Color(0xFFFFB300),
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToPlaylists
+                        )
+                        QuickCategoryButton(
+                            title = "Favorites",
+                            count = "${allVideos.count { it.isFavorite }}",
+                            icon = Icons.Default.Favorite,
+                            tint = Color(0xFFFF3366),
+                            modifier = Modifier.weight(1f),
+                            onClick = onNavigateToFavorites
+                        )
                     }
                 }
 
-                items(recentlyPlayed.take(4), key = { "recent_${it.id}" }) { video ->
-                    VideoCard(
-                        video = video,
-                        isGrid = false,
-                        isSelected = false,
-                        isSelectionMode = false,
-                        onClick = { onPlayVideo(video) },
-                        onLongClick = {},
-                        onFavoriteToggle = { viewModel.toggleFavorite(video) },
-                        onShare = { viewModel.shareVideo(context, video) },
-                        onRename = { videoToRename = video },
-                        onDelete = { viewModel.deleteVideo(video) },
-                        onAddToPlaylist = { selectedVideoForPlaylist = video },
-                        onShowInfo = { selectedVideoForInfo = video },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            // Folders Preview
-            if (folderSummaries.isNotEmpty()) {
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Folders",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        TextButton(onClick = onNavigateToFolders) {
-                            Text("View All", color = CyanNeon, fontSize = 13.sp)
-                        }
-                    }
-                }
-
-                items(folderSummaries.take(3), key = { "folder_${it.folder}" }) { summary ->
-                    FolderCard(
-                        folderSummary = summary,
-                        onClick = { onNavigateToFolderDetail(summary.folder) },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-            }
-
-            // Recently Added / Library preview
-            if (recentlyAdded.isNotEmpty()) {
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Recently Added",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        TextButton(onClick = onNavigateToVideos) {
-                            Text("All Videos", color = CyanNeon, fontSize = 13.sp)
-                        }
-                    }
-                }
-
-                items(recentlyAdded.take(6), key = { "added_${it.id}" }) { video ->
-                    VideoCard(
-                        video = video,
-                        isGrid = false,
-                        isSelected = false,
-                        isSelectionMode = false,
-                        onClick = { onPlayVideo(video) },
-                        onLongClick = {},
-                        onFavoriteToggle = { viewModel.toggleFavorite(video) },
-                        onShare = { viewModel.shareVideo(context, video) },
-                        onRename = { videoToRename = video },
-                        onDelete = { viewModel.deleteVideo(video) },
-                        onAddToPlaylist = { selectedVideoForPlaylist = video },
-                        onShowInfo = { selectedVideoForInfo = video },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                    )
-                }
-            } else if (allVideos.isEmpty() && isScanning) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 48.dp, horizontal = 24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                // Recently Played Section
+                if (recentlyPlayed.isNotEmpty()) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(36.dp),
-                                strokeWidth = 3.dp,
-                                color = CyanNeon
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "Indexing your video library...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "Recently Played",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
+                            TextButton(onClick = onNavigateToVideos) {
+                                Text("See All", color = CyanNeon, fontSize = 13.sp)
+                            }
                         }
                     }
+
+                    items(recentlyPlayed.take(4), key = { "recent_${it.id}" }) { video ->
+                        VideoCard(
+                            video = video,
+                            isGrid = false,
+                            isSelected = false,
+                            isSelectionMode = false,
+                            onClick = { onPlayVideo(video) },
+                            onLongClick = {},
+                            onFavoriteToggle = { viewModel.toggleFavorite(video) },
+                            onShare = { viewModel.shareVideo(context, video) },
+                            onRename = { videoToRename = video },
+                            onDelete = { viewModel.deleteVideo(video) },
+                            onAddToPlaylist = { selectedVideoForPlaylist = video },
+                            onShowInfo = { selectedVideoForInfo = video },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
                 }
-            } else if (allVideos.isEmpty() && !isScanning) {
-                item {
-                    EmptyStateView(
-                        icon = Icons.Default.VideoLibrary,
-                        title = "No Videos Found",
-                        description = "Scan your device to find and play local video files.",
-                        actionButtonText = "Scan Videos",
-                        onActionClick = { viewModel.scanMedia(force = true) }
-                    )
+
+                // Folders Preview
+                if (folderSummaries.isNotEmpty()) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Folders",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            TextButton(onClick = onNavigateToFolders) {
+                                Text("View All", color = CyanNeon, fontSize = 13.sp)
+                            }
+                        }
+                    }
+
+                    items(folderSummaries.take(3), key = { "folder_${it.folder}" }) { summary ->
+                        FolderCard(
+                            folderSummary = summary,
+                            onClick = { onNavigateToFolderDetail(summary.folder) },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
+                }
+
+                // Recently Added / Library preview
+                if (recentlyAdded.isNotEmpty()) {
+                    item {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Recently Added",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            TextButton(onClick = onNavigateToVideos) {
+                                Text("All Videos", color = CyanNeon, fontSize = 13.sp)
+                            }
+                        }
+                    }
+
+                    items(recentlyAdded.take(6), key = { "added_${it.id}" }) { video ->
+                        VideoCard(
+                            video = video,
+                            isGrid = false,
+                            isSelected = false,
+                            isSelectionMode = false,
+                            onClick = { onPlayVideo(video) },
+                            onLongClick = {},
+                            onFavoriteToggle = { viewModel.toggleFavorite(video) },
+                            onShare = { viewModel.shareVideo(context, video) },
+                            onRename = { videoToRename = video },
+                            onDelete = { viewModel.deleteVideo(video) },
+                            onAddToPlaylist = { selectedVideoForPlaylist = video },
+                            onShowInfo = { selectedVideoForInfo = video },
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                        )
+                    }
+                } else if (allVideos.isEmpty() && isScanning) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 48.dp, horizontal = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(36.dp),
+                                    strokeWidth = 3.dp,
+                                    color = CyanNeon
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Indexing your video library...",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                } else if (allVideos.isEmpty() && !isScanning) {
+                    item {
+                        EmptyStateView(
+                            icon = Icons.Default.VideoLibrary,
+                            title = "No Videos Found",
+                            description = "Scan your device to find and play local video files.",
+                            actionButtonText = "Scan Videos",
+                            onActionClick = { viewModel.scanMedia(force = true) }
+                        )
+                    }
                 }
             }
         }

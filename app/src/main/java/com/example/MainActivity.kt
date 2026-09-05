@@ -16,9 +16,13 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -157,6 +161,7 @@ fun PakPlayApp(
 }
 
 
+@kotlin.OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun MainAppScaffold(
     navController: NavHostController,
@@ -175,7 +180,9 @@ fun MainAppScaffold(
         BottomNavItem.Settings
     )
 
-    val showBottomBar = currentRoute in listOf(
+    val isImeVisible = WindowInsets.isImeVisible
+
+    val showBottomBar = !isImeVisible && currentRoute in listOf(
         Screen.Home.route,
         Screen.Videos.route,
         Screen.Folders.route,
@@ -190,12 +197,14 @@ fun MainAppScaffold(
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             Column(modifier = Modifier.fillMaxWidth()) {
-                // Mini Player Bar (Visible when navigating back to other screens with video playing)
-                if (currentRoute != Screen.Player.route && currentRoute != Screen.Splash.route) {
+                // Mini Player Bar (Visible when navigating back to other screens with video playing, hidden during IME/typing)
+                if (!isImeVisible && currentRoute != Screen.Player.route && currentRoute != Screen.Splash.route) {
                     MiniPlayerBar(
                         playerViewModel = playerViewModel,
                         onExpandToFullScreen = {

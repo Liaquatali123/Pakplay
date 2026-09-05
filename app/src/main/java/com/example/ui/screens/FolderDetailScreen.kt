@@ -259,7 +259,7 @@ fun FolderDetailScreen(
                         LazyVerticalGrid(
                             columns = GridCells.Adaptive(minSize = 165.dp),
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 100.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
@@ -283,7 +283,7 @@ fun FolderDetailScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(sortedFolderVideos, key = { it.id }) { video ->
