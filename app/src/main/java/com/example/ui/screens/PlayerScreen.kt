@@ -198,6 +198,9 @@ fun PlayerScreen(
                 }
             },
             update = { view ->
+                if (view.player == null) {
+                    view.player = playerViewModel.playerController.getPlayer()
+                }
                 view.resizeMode = when (playerUiState.aspectRatioMode) {
                     AspectRatioMode.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
                     AspectRatioMode.CROP -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
@@ -206,6 +209,9 @@ fun PlayerScreen(
                     AspectRatioMode.RATIO_4_3 -> AspectRatioFrameLayout.RESIZE_MODE_FIXED_HEIGHT
                     AspectRatioMode.ORIGINAL -> AspectRatioFrameLayout.RESIZE_MODE_FIT
                 }
+            },
+            onReset = { view ->
+                view.player = null
             }
         )
 
@@ -530,6 +536,22 @@ fun PlayerScreen(
                                 contentDescription = "Info",
                                 tint = Color.White,
                                 modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        // Stop / Close Video Button
+                        IconButton(
+                            onClick = {
+                                playerViewModel.stopPlayback()
+                                onBack()
+                            },
+                            modifier = Modifier.size(36.dp).testTag("stop_video_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Stop Video and Exit",
+                                tint = Color(0xFFFF5252),
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }

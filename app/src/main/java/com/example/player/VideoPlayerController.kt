@@ -244,6 +244,26 @@ class VideoPlayerController(
         savePlaybackProgress()
     }
 
+    fun stopPlayback() {
+        savePlaybackProgress()
+        stopProgressTracker()
+        exoPlayer?.stop()
+        exoPlayer?.clearMediaItems()
+        currentVideoEntity = null
+        _uiState.value = _uiState.value.copy(
+            currentVideoId = 0L,
+            videoTitle = "",
+            videoUri = "",
+            isPlaying = false,
+            isBuffering = false,
+            isEnded = false,
+            currentPositionMs = 0L,
+            durationMs = 0L,
+            activeSubtitleText = "",
+            externalSubtitles = emptyList()
+        )
+    }
+
     fun togglePlayPause() {
         exoPlayer?.let {
             if (it.isPlaying) {

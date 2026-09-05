@@ -129,6 +129,10 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun togglePlayPause() = playerController.togglePlayPause()
 
+    fun pause() = playerController.pause()
+
+    fun stopPlayback() = playerController.stopPlayback()
+
     fun seekTo(positionMs: Long) = playerController.seekTo(positionMs)
 
     fun seekRelative(offsetMs: Long) = playerController.seekRelative(offsetMs)

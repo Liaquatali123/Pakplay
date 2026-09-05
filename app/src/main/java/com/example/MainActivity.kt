@@ -15,6 +15,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,6 +69,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.data.local.entity.VideoEntity
+import com.example.ui.components.MiniPlayerBar
 import com.example.ui.navigation.Screen
 import com.example.ui.navigation.UriPathHelper
 import com.example.ui.screens.FavoritesScreen
@@ -191,61 +193,76 @@ fun MainAppScaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
-            AnimatedVisibility(
-                visible = showBottomBar,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it })
-            ) {
-                Surface(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    shadowElevation = 8.dp,
-                    shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // Mini Player Bar (Visible when navigating back to other screens with video playing)
+                if (currentRoute != Screen.Player.route && currentRoute != Screen.Splash.route) {
+                    MiniPlayerBar(
+                        playerViewModel = playerViewModel,
+                        onExpandToFullScreen = {
+                            val currentVidId = playerViewModel.playerUiState.value.currentVideoId
+                            if (currentVidId != 0L) {
+                                navController.navigate(Screen.Player.createRoute(currentVidId))
+                            }
+                        }
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = showBottomBar,
+                    enter = slideInVertically(initialOffsetY = { it }),
+                    exit = slideOutVertically(targetOffsetY = { it })
                 ) {
-                    NavigationBar(
-                        containerColor = Color.Transparent,
-                        windowInsets = androidx.compose.material3.NavigationBarDefaults.windowInsets,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("bottom_nav_bar")
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        shadowElevation = 8.dp,
+                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                     ) {
-                        bottomNavItems.forEach { item ->
-                            val selected = currentRoute == item.route
-                            NavigationBarItem(
-                                selected = selected,
-                                onClick = {
-                                    if (currentRoute != item.route) {
-                                        navController.navigate(item.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
+                        NavigationBar(
+                            containerColor = Color.Transparent,
+                            windowInsets = androidx.compose.material3.NavigationBarDefaults.windowInsets,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("bottom_nav_bar")
+                        ) {
+                            bottomNavItems.forEach { item ->
+                                val selected = currentRoute == item.route
+                                NavigationBarItem(
+                                    selected = selected,
+                                    onClick = {
+                                        if (currentRoute != item.route) {
+                                            navController.navigate(item.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
                                             }
-                                            launchSingleTop = true
-                                            restoreState = true
                                         }
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                                        contentDescription = item.title,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        text = item.title,
-                                        fontSize = 10.sp,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = CyanNeon,
-                                    selectedTextColor = CyanNeon,
-                                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                    indicatorColor = CyanNeon.copy(alpha = 0.15f)
-                                ),
-                                modifier = Modifier.testTag(item.testTag)
-                            )
+                                    },
+                                    icon = {
+                                        Icon(
+                                            imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                            contentDescription = item.title,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    },
+                                    label = {
+                                        Text(
+                                            text = item.title,
+                                            fontSize = 10.sp,
+                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = CyanNeon,
+                                        selectedTextColor = CyanNeon,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                        indicatorColor = CyanNeon.copy(alpha = 0.15f)
+                                    ),
+                                    modifier = Modifier.testTag(item.testTag)
+                                )
+                            }
                         }
                     }
                 }
