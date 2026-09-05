@@ -149,20 +149,22 @@ fun VideoCard(
                     }
 
                     // Resolution badge
-                    Surface(
-                        modifier = Modifier
-                            .padding(6.dp)
-                            .align(Alignment.TopEnd),
-                        color = Color.Black.copy(alpha = 0.7f),
-                        shape = RoundedCornerShape(4.dp)
-                    ) {
-                        Text(
-                            text = video.resolutionLabel,
-                            color = CyanNeon,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                        )
+                    if (video.resolutionLabel.isNotBlank()) {
+                        Surface(
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .align(Alignment.TopEnd),
+                            color = Color.Black.copy(alpha = 0.7f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = video.resolutionLabel,
+                                color = CyanNeon,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
+                        }
                     }
 
                     // Duration badge
@@ -342,17 +344,19 @@ fun VideoCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(3.dp)
-                        ) {
-                            Text(
-                                text = video.resolutionLabel,
-                                color = CyanNeon,
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                            )
+                        if (video.resolutionLabel.isNotBlank()) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(3.dp)
+                            ) {
+                                Text(
+                                    text = video.resolutionLabel,
+                                    color = CyanNeon,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
+                            }
                         }
                         Text(
                             text = "${video.formattedSize} • ${video.folder}",

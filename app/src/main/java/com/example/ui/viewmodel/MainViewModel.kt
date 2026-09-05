@@ -144,9 +144,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         // Resolution Filter
         list = when (filter.resolutionFilter) {
-            ResolutionFilter.HD -> list.filter { it.width >= 1280 && it.width < 1920 }
-            ResolutionFilter.FHD -> list.filter { it.width in 1920..2559 }
-            ResolutionFilter.UHD_4K -> list.filter { it.width >= 2560 || it.height >= 1440 }
+            ResolutionFilter.HD -> list.filter {
+                val maxDim = maxOf(it.width, it.height)
+                val minDim = minOf(it.width, it.height)
+                ((maxDim in 1280..1919 && minDim >= 600) || (minDim in 720..1079)) && maxDim < 1920 && minDim < 1080
+            }
+            ResolutionFilter.FHD -> list.filter {
+                val maxDim = maxOf(it.width, it.height)
+                val minDim = minOf(it.width, it.height)
+                ((maxDim in 1920..2559 && minDim >= 900) || (minDim in 1080..1439)) && maxDim < 2560 && minDim < 1440
+            }
+            ResolutionFilter.UHD_4K -> list.filter {
+                val maxDim = maxOf(it.width, it.height)
+                val minDim = minOf(it.width, it.height)
+                (maxDim >= 3840 && minDim >= 1600) || minDim >= 2160 || (maxDim >= 2560 && minDim >= 1440)
+            }
             ResolutionFilter.ALL -> list
         }
 

@@ -69,9 +69,24 @@ class VideoPlayerController(
     private val currentStreamVolume: Int
         get() = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
 
+    private var internalVolumeLevel: Int = -1
+
     init {
         val maxVol = maxStreamVolume
         val curVol = currentStreamVolume
+        internalVolumeLevel = curVol
+        val volRatio = if (maxVol > 0) curVol.toFloat() / maxVol.toFloat() else 0.5f
+        _uiState.value = _uiState.value.copy(
+            maxVolume = maxVol,
+            currentVolumeLevel = curVol,
+            volume = volRatio
+        )
+    }
+
+    fun syncSystemVolume() {
+        val maxVol = maxStreamVolume
+        val curVol = currentStreamVolume
+        internalVolumeLevel = curVol
         val volRatio = if (maxVol > 0) curVol.toFloat() / maxVol.toFloat() else 0.5f
         _uiState.value = _uiState.value.copy(
             maxVolume = maxVol,
@@ -321,8 +336,11 @@ class VideoPlayerController(
     // Volume step adjustment (+1 or -1)
     fun changeVolumeBy(delta: Int) {
         val maxVol = maxStreamVolume
-        val curVol = currentStreamVolume
-        val newLevel = (curVol + delta).coerceIn(0, maxVol)
+        if (internalVolumeLevel < 0) {
+            internalVolumeLevel = currentStreamVolume
+        }
+        val newLevel = (internalVolumeLevel + delta).coerceIn(0, maxVol)
+        internalVolumeLevel = newLevel
         try {
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, newLevel, 0)
         } catch (e: Exception) {
@@ -592,14 +610,16 @@ class VideoPlayerController(
                             )
                         )
                         if (isSel) {
-                            val h = format.height
+                            val minDim = minOf(format.width, format.height)
+                            val maxDim = maxOf(format.width, format.height)
                             val resLabel = when {
-                                h >= 4320 -> "8K"
-                                h >= 2160 -> "4K"
-                                h >= 1440 -> "1440p"
-                                h >= 1080 -> "1080p"
-                                h >= 720 -> "720p"
-                                h > 0 -> "${h}p"
+                                (maxDim >= 7680 && minDim >= 3840) || minDim >= 4320 -> "8K"
+                                (maxDim >= 3840 && minDim >= 1600) || minDim >= 2160 -> "4K"
+                                (maxDim >= 2560 && minDim >= 1200) || minDim >= 1440 -> "1440p"
+                                (maxDim >= 1920 && minDim >= 900) || minDim >= 1080 -> "1080p"
+                                (maxDim >= 1280 && minDim >= 600) || minDim >= 720 -> "720p"
+                                minDim >= 480 || (maxDim >= 700 && minDim >= 400) -> "480p"
+                                minDim > 0 -> "${minDim}p"
                                 else -> "HD"
                             }
                             val mime = format.sampleMimeType ?: ""

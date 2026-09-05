@@ -34,16 +34,18 @@ data class VideoEntity(
 ) {
     val resolutionLabel: String
         get() {
+            if (width <= 0 || height <= 0) return ""
             val maxDim = maxOf(width, height)
             val minDim = minOf(width, height)
             return when {
-                maxDim >= 3840 && minDim >= 2160 -> "4K UHD"
-                maxDim >= 2560 && minDim >= 1440 -> "1440p QHD"
-                maxDim >= 1920 && minDim >= 1080 -> "1080p FHD"
-                maxDim >= 1280 && minDim >= 720 -> "720p HD"
-                maxDim >= 854 && minDim >= 480 -> "480p"
-                width > 0 && height > 0 -> "${width}x${height}"
-                else -> "HD"
+                (maxDim >= 7680 && minDim >= 3840) || minDim >= 4320 -> "8K UHD"
+                (maxDim >= 3840 && minDim >= 1600) || minDim >= 2160 -> "4K UHD"
+                (maxDim >= 2560 && minDim >= 1200) || minDim >= 1440 -> "1440p QHD"
+                (maxDim >= 1920 && minDim >= 900) || minDim >= 1080 -> "1080p FHD"
+                (maxDim >= 1280 && minDim >= 600) || minDim >= 720 -> "720p HD"
+                minDim >= 480 || (maxDim >= 700 && minDim >= 400) -> "480p"
+                minDim >= 360 -> "360p"
+                else -> "${width}x${height}"
             }
         }
 

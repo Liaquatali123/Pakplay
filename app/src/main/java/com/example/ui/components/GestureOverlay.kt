@@ -1,9 +1,9 @@
 package com.example.ui.components
 
-import android.app.Activity
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -13,9 +13,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.IntSize
 
 @Composable
@@ -51,25 +51,7 @@ fun GestureOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .pointerInput(gesturesEnabled) {
-                if (gesturesEnabled) {
-                    detectTransformGestures { _, pan, zoom, _ ->
-                        if (zoom != 1.0f) {
-                            currentScale = (currentScale * zoom).coerceIn(0.5f, 4.0f)
-                            onZoomChange(currentScale)
-                        } else if (size.width > 0 && size.height > 0) {
-                            val absX = kotlin.math.abs(pan.x)
-                            val absY = kotlin.math.abs(pan.y)
-
-                            if (absX > absY && absX > 5f) {
-                                // Horizontal swipe seek
-                                val deltaSec = (pan.x / size.width.toFloat()) * 90f // up to 90s swipe span
-                                onHorizontalSwipeSeek((deltaSec * 1000).toLong())
-                            }
-                        }
-                    }
-                }
-            }
+            .onSizeChanged { size = it }
             .pointerInput(gesturesEnabled, seekSeconds) {
                 detectTapGestures(
                     onTap = { onSingleTap() },
@@ -88,40 +70,70 @@ fun GestureOverlay(
                 )
             }
             .pointerInput(gesturesEnabled) {
-                if (gesturesEnabled) {
+                if (!gesturesEnabled) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var isZooming = false
+                    var isDragStarted = false
+                    var isHorizontalSeek = false
+                    var isVerticalDrag = false
                     var accumulatedY = 0f
-                    detectVerticalDragGestures(
-                        onDragStart = { accumulatedY = 0f },
-                        onVerticalDrag = { change, dragAmount ->
-                            change.consume()
-                            accumulatedY += dragAmount // positive = down, negative = up
-                            val threshold = 25f // pixels per step notch
-                            if (kotlin.math.abs(accumulatedY) >= threshold) {
-                                val steps = (accumulatedY / threshold).toInt()
-                                accumulatedY %= threshold
-                                val isLeft = change.position.x < size.width * 0.5f
-                                if (isLeft) {
-                                    // Swipe up (negative accumulatedY) increases brightness
-                                    val brightnessDelta = -steps * 0.05f
-                                    onBrightnessDelta(brightnessDelta)
-                                } else {
-                                    // Swipe up (negative accumulatedY) increases volume (+1 per step)
-                                    val volumeDelta = -steps
-                                    onVolumeDelta(volumeDelta)
+                    var accumulatedX = 0f
+                    val touchSlop = viewConfiguration.touchSlop
+                    val isLeft = down.position.x < (size.width * 0.5f)
+
+                    do {
+                        val event = awaitPointerEvent()
+                        val activePointers = event.changes.filter { it.pressed }
+
+                        if (activePointers.size >= 2) {
+                            // Two-finger pinch to zoom
+                            isZooming = true
+                            val zoom = event.calculateZoom()
+                            if (zoom != 1.0f) {
+                                currentScale = (currentScale * zoom).coerceIn(0.5f, 4.0f)
+                                onZoomChange(currentScale)
+                            }
+                            event.changes.forEach { it.consume() }
+                        } else if (activePointers.size == 1 && !isZooming) {
+                            val change = activePointers[0]
+                            val dragDelta = change.positionChange()
+
+                            if (!isDragStarted) {
+                                accumulatedX += dragDelta.x
+                                accumulatedY += dragDelta.y
+                                if (kotlin.math.hypot(accumulatedX, accumulatedY) > touchSlop) {
+                                    isDragStarted = true
+                                    if (kotlin.math.abs(accumulatedX) > kotlin.math.abs(accumulatedY)) {
+                                        isHorizontalSeek = true
+                                    } else {
+                                        isVerticalDrag = true
+                                        accumulatedY = 0f
+                                    }
+                                }
+                            } else {
+                                if (isHorizontalSeek && size.width > 0) {
+                                    change.consume()
+                                    val deltaSec = (dragDelta.x / size.width.toFloat()) * 90f
+                                    onHorizontalSwipeSeek((deltaSec * 1000).toLong())
+                                } else if (isVerticalDrag) {
+                                    change.consume()
+                                    accumulatedY += dragDelta.y
+                                    val threshold = 25f
+                                    if (kotlin.math.abs(accumulatedY) >= threshold) {
+                                        val steps = (accumulatedY / threshold).toInt()
+                                        accumulatedY %= threshold
+                                        if (isLeft) {
+                                            onBrightnessDelta(-steps * 0.05f)
+                                        } else {
+                                            onVolumeDelta(-steps)
+                                        }
+                                    }
                                 }
                             }
                         }
-                    )
+                    } while (event.changes.any { it.pressed })
                 }
             }
-    ) {
-        // Keep track of size
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    size = this.size
-                }
-        )
-    }
+    )
 }

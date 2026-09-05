@@ -136,6 +136,7 @@ fun PlayerScreen(
 
     // Immersive Fullscreen, Screen On, and Volume Control Stream
     DisposableEffect(Unit) {
+        playerViewModel.playerController.syncSystemVolume()
         val window = activity?.window
         if (window != null) {
             val insetsController = androidx.core.view.WindowCompat.getInsetsController(window, window.decorView)
@@ -389,6 +390,12 @@ fun PlayerScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) {
+                        playerViewModel.toggleControls()
+                    }
                     .background(
                         Brush.verticalGradient(
                             listOf(
