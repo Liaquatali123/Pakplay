@@ -54,6 +54,7 @@ import coil.request.ImageRequest
 import com.example.data.local.entity.VideoEntity
 import com.example.ui.theme.CyanNeon
 import com.example.ui.theme.PurpleElectric
+import com.example.util.EpisodeSorter
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -73,6 +74,7 @@ fun VideoCard(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    val episodeBadge = remember(video.title) { EpisodeSorter.getEpisodeBadge(video.title) }
 
     if (isGrid) {
         Card(
@@ -145,6 +147,23 @@ fun VideoCard(
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
+                        }
+                    } else if (episodeBadge != null) {
+                        // Episode Badge (e.g. Ep. 1, Ep. 50, #12, S1:E2)
+                        Surface(
+                            modifier = Modifier
+                                .padding(6.dp)
+                                .align(Alignment.TopStart),
+                            color = PurpleElectric.copy(alpha = 0.9f),
+                            shape = RoundedCornerShape(4.dp)
+                        ) {
+                            Text(
+                                text = episodeBadge,
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                            )
                         }
                     }
 
@@ -344,6 +363,20 @@ fun VideoCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        if (episodeBadge != null) {
+                            Surface(
+                                color = PurpleElectric.copy(alpha = 0.85f),
+                                shape = RoundedCornerShape(3.dp)
+                            ) {
+                                Text(
+                                    text = episodeBadge,
+                                    color = Color.White,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
                         if (video.resolutionLabel.isNotBlank()) {
                             Surface(
                                 color = MaterialTheme.colorScheme.surfaceVariant,

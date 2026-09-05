@@ -26,8 +26,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.io.File
+import com.example.util.EpisodeSorter
 
 enum class SortType {
+    EPISODE_ASC,
+    EPISODE_DESC,
     DATE_DESC,
     DATE_ASC,
     NAME_ASC,
@@ -177,6 +180,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
         // Sorting
         when (sort) {
+            SortType.EPISODE_ASC -> list.sortedWith { a, b -> EpisodeSorter.compare(a.title, b.title) }
+            SortType.EPISODE_DESC -> list.sortedWith { a, b -> EpisodeSorter.compare(b.title, a.title) }
             SortType.DATE_DESC -> list.sortedByDescending { it.dateAdded }
             SortType.DATE_ASC -> list.sortedBy { it.dateAdded }
             SortType.NAME_ASC -> list.sortedBy { it.title.lowercase() }

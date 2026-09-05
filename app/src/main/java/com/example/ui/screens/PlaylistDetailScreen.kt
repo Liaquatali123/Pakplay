@@ -22,6 +22,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -38,6 +41,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -47,10 +51,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.local.entity.VideoEntity
 import com.example.ui.components.EmptyStateView
+import com.example.ui.components.FolderSortBottomSheet
 import com.example.ui.components.VideoCard
 import com.example.ui.components.VideoInfoDialog
 import com.example.ui.theme.CyanNeon
 import com.example.ui.viewmodel.MainViewModel
+import com.example.ui.viewmodel.SortType
+import com.example.util.EpisodeSorter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +73,24 @@ fun PlaylistDetailScreen(
     val isGridView by viewModel.isGridView.collectAsStateWithLifecycle()
     var selectedVideoForInfo by remember { mutableStateOf<VideoEntity?>(null) }
 
+    var playlistSort by remember { mutableStateOf(SortType.EPISODE_ASC) }
+    var showSortSheet by remember { mutableStateOf(false) }
+
+    val sortedPlaylistVideos = remember(playlistVideos, playlistSort) {
+        when (playlistSort) {
+            SortType.EPISODE_ASC -> playlistVideos.sortedWith { a, b -> EpisodeSorter.compare(a.title, b.title) }
+            SortType.EPISODE_DESC -> playlistVideos.sortedWith { a, b -> EpisodeSorter.compare(b.title, a.title) }
+            SortType.NAME_ASC -> playlistVideos.sortedBy { it.title.lowercase() }
+            SortType.NAME_DESC -> playlistVideos.sortedByDescending { it.title.lowercase() }
+            SortType.DATE_DESC -> playlistVideos.sortedByDescending { it.dateAdded }
+            SortType.DATE_ASC -> playlistVideos.sortedBy { it.dateAdded }
+            SortType.DURATION_DESC -> playlistVideos.sortedByDescending { it.duration }
+            SortType.DURATION_ASC -> playlistVideos.sortedBy { it.duration }
+            SortType.SIZE_DESC -> playlistVideos.sortedByDescending { it.size }
+            SortType.SIZE_ASC -> playlistVideos.sortedBy { it.size }
+        }
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize().testTag("playlist_detail_screen"),
         containerColor = MaterialTheme.colorScheme.background,
@@ -79,7 +104,7 @@ fun PlaylistDetailScreen(
                             color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
-                            text = "${playlistVideos.size} videos",
+                            text = "${sortedPlaylistVideos.size} videos",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -94,6 +119,18 @@ fun PlaylistDetailScreen(
                         )
                     }
                 },
+                actions = {
+                    IconButton(
+                        onClick = { showSortSheet = true },
+                        modifier = Modifier.testTag("sort_playlist_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Sort,
+                            contentDescription = "Sort Options",
+                            tint = CyanNeon
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
@@ -105,7 +142,7 @@ fun PlaylistDetailScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            if (playlistVideos.isNotEmpty()) {
+            if (sortedPlaylistVideos.isNotEmpty()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -114,8 +151,8 @@ fun PlaylistDetailScreen(
                 ) {
                     Button(
                         onClick = {
-                            if (playlistVideos.isNotEmpty()) {
-                                onPlayVideo(playlistVideos.first(), playlistVideos)
+                            if (sortedPlaylistVideos.isNotEmpty()) {
+                                onPlayVideo(sortedPlaylistVideos.first(), sortedPlaylistVideos)
                             }
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = CyanNeon, contentColor = Color.Black),
@@ -129,8 +166,8 @@ fun PlaylistDetailScreen(
 
                     OutlinedButton(
                         onClick = {
-                            if (playlistVideos.isNotEmpty()) {
-                                val shuffled = playlistVideos.shuffled()
+                            if (sortedPlaylistVideos.isNotEmpty()) {
+                                val shuffled = sortedPlaylistVideos.shuffled()
                                 onPlayVideo(shuffled.first(), shuffled)
                             }
                         },
@@ -142,10 +179,63 @@ fun PlaylistDetailScreen(
                         Text("Shuffle")
                     }
                 }
+
+                // Quick Sort Indicator Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Sequence Order",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Surface(
+                        onClick = { showSortSheet = true },
+                        shape = RoundedCornerShape(8.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        modifier = Modifier.testTag("playlist_sort_chip")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SwapVert,
+                                contentDescription = null,
+                                tint = CyanNeon,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            val sortLabel = when (playlistSort) {
+                                SortType.EPISODE_ASC -> "Episode: 1 → 50"
+                                SortType.EPISODE_DESC -> "Episode: 50 → 1"
+                                SortType.NAME_ASC -> "Name: A to Z"
+                                SortType.NAME_DESC -> "Name: Z to A"
+                                SortType.DATE_DESC -> "Date: Newest"
+                                SortType.DATE_ASC -> "Date: Oldest"
+                                SortType.DURATION_DESC -> "Duration: Longest"
+                                SortType.DURATION_ASC -> "Duration: Shortest"
+                                SortType.SIZE_DESC -> "Size: Largest"
+                                SortType.SIZE_ASC -> "Size: Smallest"
+                            }
+                            Text(
+                                text = sortLabel,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = CyanNeon
+                            )
+                        }
+                    }
+                }
             }
 
             Box(modifier = Modifier.weight(1f)) {
-                if (playlistVideos.isEmpty()) {
+                if (sortedPlaylistVideos.isEmpty()) {
                     EmptyStateView(
                         icon = Icons.Default.PlaylistPlay,
                         title = "Playlist is Empty",
@@ -162,13 +252,13 @@ fun PlaylistDetailScreen(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(playlistVideos, key = { it.id }) { video ->
+                            items(sortedPlaylistVideos, key = { it.id }) { video ->
                                 VideoCard(
                                     video = video,
                                     isGrid = true,
                                     isSelected = false,
                                     isSelectionMode = false,
-                                    onClick = { onPlayVideo(video, playlistVideos) },
+                                    onClick = { onPlayVideo(video, sortedPlaylistVideos) },
                                     onLongClick = {},
                                     onFavoriteToggle = { viewModel.toggleFavorite(video) },
                                     onShare = { viewModel.shareVideo(context, video) },
@@ -185,13 +275,13 @@ fun PlaylistDetailScreen(
                             contentPadding = PaddingValues(16.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            items(playlistVideos, key = { it.id }) { video ->
+                            items(sortedPlaylistVideos, key = { it.id }) { video ->
                                 VideoCard(
                                     video = video,
                                     isGrid = false,
                                     isSelected = false,
                                     isSelectionMode = false,
-                                    onClick = { onPlayVideo(video, playlistVideos) },
+                                    onClick = { onPlayVideo(video, sortedPlaylistVideos) },
                                     onLongClick = {},
                                     onFavoriteToggle = { viewModel.toggleFavorite(video) },
                                     onShare = { viewModel.shareVideo(context, video) },
@@ -208,11 +298,19 @@ fun PlaylistDetailScreen(
         }
     }
 
+    if (showSortSheet) {
+        FolderSortBottomSheet(
+            currentSort = playlistSort,
+            onSortSelected = { playlistSort = it },
+            onDismiss = { showSortSheet = false }
+        )
+    }
+
     selectedVideoForInfo?.let { video ->
         VideoInfoDialog(
             video = video,
             onDismiss = { selectedVideoForInfo = null },
-            onPlay = { onPlayVideo(video, playlistVideos) },
+            onPlay = { onPlayVideo(video, sortedPlaylistVideos) },
             onShare = { viewModel.shareVideo(context, video) },
             onRename = {},
             onFavoriteToggle = { viewModel.toggleFavorite(video) },

@@ -127,6 +127,8 @@ fun SortFilterBottomSheet(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                SortChip("Episode: 1 → 50", selectedSort == SortType.EPISODE_ASC) { selectedSort = SortType.EPISODE_ASC }
+                SortChip("Episode: 50 → 1", selectedSort == SortType.EPISODE_DESC) { selectedSort = SortType.EPISODE_DESC }
                 SortChip("Date: Newest", selectedSort == SortType.DATE_DESC) { selectedSort = SortType.DATE_DESC }
                 SortChip("Date: Oldest", selectedSort == SortType.DATE_ASC) { selectedSort = SortType.DATE_ASC }
                 SortChip("Name: A to Z", selectedSort == SortType.NAME_ASC) { selectedSort = SortType.NAME_ASC }
