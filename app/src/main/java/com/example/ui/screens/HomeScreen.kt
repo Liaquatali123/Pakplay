@@ -118,7 +118,7 @@ fun HomeScreen(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 110.dp)
+            contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             // Header: Brand & Scan button
             item {

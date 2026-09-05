@@ -18,14 +18,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.isImeVisible
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -180,9 +182,10 @@ fun MainAppScaffold(
         BottomNavItem.Settings
     )
 
-    val isImeVisible = WindowInsets.isImeVisible
+    val isPlayerScreen = currentRoute?.startsWith("player") == true || currentRoute == Screen.Player.route
+    val isSplashScreen = currentRoute == Screen.Splash.route
 
-    val showBottomBar = !isImeVisible && currentRoute in listOf(
+    val isMainTab = currentRoute in listOf(
         Screen.Home.route,
         Screen.Videos.route,
         Screen.Folders.route,
@@ -190,6 +193,7 @@ fun MainAppScaffold(
         Screen.Favorites.route,
         Screen.Settings.route
     )
+    val showBottomBar = isMainTab
 
     val onPlayVideo = { video: VideoEntity, playlist: List<VideoEntity> ->
         playerViewModel.playVideo(video, playlist)
@@ -197,14 +201,21 @@ fun MainAppScaffold(
     }
 
     Scaffold(
-        modifier = Modifier
-            .fillMaxSize()
-            .imePadding(),
+        modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
+        contentWindowInsets = if (isPlayerScreen) WindowInsets(0, 0, 0, 0) else WindowInsets.safeDrawing,
         bottomBar = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                // Mini Player Bar (Visible when navigating back to other screens with video playing, hidden during IME/typing)
-                if (!isImeVisible && currentRoute != Screen.Player.route && currentRoute != Screen.Splash.route) {
+            if (!isPlayerScreen && !isSplashScreen) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(
+                            WindowInsets.safeDrawing.only(
+                                WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal
+                            )
+                        )
+                ) {
+                    // Mini Player Bar: always visible above system navigation/IME when playing
                     MiniPlayerBar(
                         playerViewModel = playerViewModel,
                         onExpandToFullScreen = {
@@ -214,63 +225,63 @@ fun MainAppScaffold(
                             }
                         }
                     )
-                }
 
-                AnimatedVisibility(
-                    visible = showBottomBar,
-                    enter = slideInVertically(initialOffsetY = { it }),
-                    exit = slideOutVertically(targetOffsetY = { it })
-                ) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        shadowElevation = 8.dp,
-                        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+                    AnimatedVisibility(
+                        visible = showBottomBar,
+                        enter = slideInVertically(initialOffsetY = { it }),
+                        exit = slideOutVertically(targetOffsetY = { it })
                     ) {
-                        NavigationBar(
-                            containerColor = Color.Transparent,
-                            windowInsets = androidx.compose.material3.NavigationBarDefaults.windowInsets,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("bottom_nav_bar")
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shadowElevation = 8.dp,
+                            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
                         ) {
-                            bottomNavItems.forEach { item ->
-                                val selected = currentRoute == item.route
-                                NavigationBarItem(
-                                    selected = selected,
-                                    onClick = {
-                                        if (currentRoute != item.route) {
-                                            navController.navigate(item.route) {
-                                                popUpTo(navController.graph.findStartDestination().id) {
-                                                    saveState = true
+                            NavigationBar(
+                                containerColor = Color.Transparent,
+                                windowInsets = WindowInsets(0, 0, 0, 0),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("bottom_nav_bar")
+                            ) {
+                                bottomNavItems.forEach { item ->
+                                    val selected = currentRoute == item.route
+                                    NavigationBarItem(
+                                        selected = selected,
+                                        onClick = {
+                                            if (currentRoute != item.route) {
+                                                navController.navigate(item.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
                                                 }
-                                                launchSingleTop = true
-                                                restoreState = true
                                             }
-                                        }
-                                    },
-                                    icon = {
-                                        Icon(
-                                            imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
-                                            contentDescription = item.title,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    },
-                                    label = {
-                                        Text(
-                                            text = item.title,
-                                            fontSize = 10.sp,
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = CyanNeon,
-                                        selectedTextColor = CyanNeon,
-                                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        indicatorColor = CyanNeon.copy(alpha = 0.15f)
-                                    ),
-                                    modifier = Modifier.testTag(item.testTag)
-                                )
+                                        },
+                                        icon = {
+                                            Icon(
+                                                imageVector = if (selected) item.selectedIcon else item.unselectedIcon,
+                                                contentDescription = item.title,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        },
+                                        label = {
+                                            Text(
+                                                text = item.title,
+                                                fontSize = 10.sp,
+                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = CyanNeon,
+                                            selectedTextColor = CyanNeon,
+                                            unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                            unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                            indicatorColor = CyanNeon.copy(alpha = 0.15f)
+                                        ),
+                                        modifier = Modifier.testTag(item.testTag)
+                                    )
+                                }
                             }
                         }
                     }
@@ -281,7 +292,9 @@ fun MainAppScaffold(
         NavHost(
             navController = navController,
             startDestination = Screen.Splash.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier
+                .padding(innerPadding)
+                .consumeWindowInsets(innerPadding)
         ) {
             // Splash Screen
             composable(Screen.Splash.route) {

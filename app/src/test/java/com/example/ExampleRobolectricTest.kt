@@ -167,4 +167,23 @@ class ExampleRobolectricTest {
         assertTrue(updatedVideos.any { it.title == "Episode 3" })
         assertTrue(updatedVideos.none { it.id == 302L })
     }
+
+    @Test
+    fun `test search filtering and restoration flow`() = runBlocking {
+        val v1 = VideoEntity(id = 401L, title = "Naraz hai Zindagi Ep 1", path = "/path/1.mp4", duration = 60000L, size = 1000L, dateModified = 1L, folder = "Dramas")
+        val v2 = VideoEntity(id = 402L, title = "Action Movie Trailer", path = "/path/2.mp4", duration = 60000L, size = 1000L, dateModified = 1L, folder = "Movies")
+        database.videoDao().insertVideos(listOf(v1, v2))
+
+        val all = repository.allVideos.first()
+        assertEquals(2, all.size)
+
+        // Search query entered
+        val searchResult = repository.searchVideos("Naraz").first()
+        assertEquals(1, searchResult.size)
+        assertEquals("Naraz hai Zindagi Ep 1", searchResult.first().title)
+
+        // Keyboard closed / search cleared -> normal screen restored
+        val clearedResult = repository.searchVideos("").first()
+        assertEquals(2, clearedResult.size)
+    }
 }
