@@ -18,6 +18,8 @@ import com.example.player.VideoPlayerController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class PlayerViewModel(application: Application) : AndroidViewModel(application) {
@@ -58,6 +60,28 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     private val _showVideoInfoDialog = MutableStateFlow(false)
     val showVideoInfoDialog: StateFlow<Boolean> = _showVideoInfoDialog.asStateFlow()
+
+    // MX Player-style end-of-video behavior: repeat current item or advance the queue.
+    private var handledEndForVideoId: Long = -1L
+
+    init {
+        viewModelScope.launch {
+            playerUiState
+                .map { it.isEnded to it.currentVideoId }
+                .distinctUntilChanged()
+                .collect { (ended, videoId) ->
+                    if (!ended || videoId == 0L || handledEndForVideoId == videoId) return@collect
+                    handledEndForVideoId = videoId
+                    when {
+                        _isRepeatEnabled.value -> {
+                            playerController.seekTo(0L)
+                            playerController.play()
+                        }
+                        appSettings.settings.value.autoPlayNext && _playlistVideos.value.size > 1 -> playNext()
+                    }
+                }
+        }
+    }
 
     private val _isShuffleEnabled = MutableStateFlow(false)
     val isShuffleEnabled: StateFlow<Boolean> = _isShuffleEnabled.asStateFlow()
