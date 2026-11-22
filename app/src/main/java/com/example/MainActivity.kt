@@ -176,9 +176,7 @@ fun MainAppScaffold(
     val bottomNavItems = listOf(
         BottomNavItem.Home,
         BottomNavItem.Videos,
-        BottomNavItem.Folders,
         BottomNavItem.Playlists,
-        BottomNavItem.Favorites,
         BottomNavItem.Settings
     )
 
