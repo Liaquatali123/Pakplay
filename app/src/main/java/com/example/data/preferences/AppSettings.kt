@@ -27,7 +27,7 @@ data class PlayerSettingsState(
 )
 
 class AppSettings(context: Context) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("pakplay_prefs", Context.MODE_PRIVATE)
+    private val prefs: SharedPreferences = context.getSharedPreferences("veyraplay_local_settings", Context.MODE_PRIVATE)
 
     private val _settings = MutableStateFlow(loadSettings())
     val settings: StateFlow<PlayerSettingsState> = _settings.asStateFlow()
