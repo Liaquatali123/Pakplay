@@ -107,7 +107,10 @@ fun VideoCard(
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(video.thumbnailUri ?: video.path)
-                            .crossfade(true)
+                            .memoryCacheKey("video_thumb_${video.id}_${video.dateModified}")
+                            .diskCacheKey("video_thumb_${video.id}_${video.dateModified}")
+                            .crossfade(false)
+                            .allowHardware(true)
                             .build(),
                         contentDescription = video.title,
                         contentScale = ContentScale.Crop,

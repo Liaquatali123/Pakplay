@@ -6,6 +6,8 @@ import android.app.NotificationManager
 import android.os.Build
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import coil.memory.MemoryCache
+import coil.disk.DiskCache
 import coil.decode.VideoFrameDecoder
 import com.example.data.local.AppDatabase
 import com.example.data.preferences.AppSettings
@@ -24,11 +26,24 @@ class PakPlayApplication : Application(), ImageLoaderFactory {
         private set
 
     override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
+        val appContext = this
+        return ImageLoader.Builder(appContext)
+            .memoryCache {
+                MemoryCache.Builder(appContext)
+                    .maxSizePercent(0.20)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(appContext.cacheDir.resolve("video_thumbnails"))
+                    .maxSizePercent(0.02)
+                    .build()
+            }
             .components {
                 add(VideoFrameDecoder.Factory())
             }
-            .crossfade(true)
+            .crossfade(false)
+            .allowHardware(true)
             .build()
     }
 
