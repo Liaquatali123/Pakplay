@@ -132,7 +132,7 @@ fun VideosScreen(
             } else {
                 if (isGridView) {
                     LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 165.dp),
+                        columns = GridCells.Adaptive(minSize = 148.dp),
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
