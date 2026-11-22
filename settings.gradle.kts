@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "Veyra Player"
+rootProject.name = "VeyraPlay"
 
 include(":app")
