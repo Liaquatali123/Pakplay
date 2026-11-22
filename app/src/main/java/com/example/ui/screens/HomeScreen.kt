@@ -321,46 +321,50 @@ fun HomeScreen(
                     }
                 }
 
-                // Quick Category Cards Row
+                // Two-column quick actions remain readable on compact phones.
                 item {
-                    Row(
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        QuickCategoryButton(
-                            title = "Videos",
-                            count = "${allVideos.size}",
-                            icon = Icons.Default.VideoLibrary,
-                            tint = CyanNeon,
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToVideos
-                        )
-                        QuickCategoryButton(
-                            title = "Folders",
-                            count = "${folderSummaries.size}",
-                            icon = Icons.Default.Folder,
-                            tint = PurpleElectric,
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToFolders
-                        )
-                        QuickCategoryButton(
-                            title = "Playlists",
-                            count = "${playlists.size}",
-                            icon = Icons.Default.PlaylistPlay,
-                            tint = Color(0xFFFFB300),
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToPlaylists
-                        )
-                        QuickCategoryButton(
-                            title = "Favorites",
-                            count = "${allVideos.count { it.isFavorite }}",
-                            icon = Icons.Default.Favorite,
-                            tint = Color(0xFFFF3366),
-                            modifier = Modifier.weight(1f),
-                            onClick = onNavigateToFavorites
-                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            QuickCategoryButton(
+                                title = "All Videos",
+                                count = "${allVideos.size}",
+                                icon = Icons.Default.VideoLibrary,
+                                tint = CyanNeon,
+                                modifier = Modifier.weight(1f),
+                                onClick = onNavigateToVideos
+                            )
+                            QuickCategoryButton(
+                                title = "Folders",
+                                count = "${folderSummaries.size}",
+                                icon = Icons.Default.Folder,
+                                tint = PurpleElectric,
+                                modifier = Modifier.weight(1f),
+                                onClick = onNavigateToFolders
+                            )
+                        }
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            QuickCategoryButton(
+                                title = "Playlists",
+                                count = "${playlists.size}",
+                                icon = Icons.Default.PlaylistPlay,
+                                tint = Color(0xFFFFB300),
+                                modifier = Modifier.weight(1f),
+                                onClick = onNavigateToPlaylists
+                            )
+                            QuickCategoryButton(
+                                title = "Favorites",
+                                count = "${allVideos.count { it.isFavorite }}",
+                                icon = Icons.Default.Favorite,
+                                tint = Color(0xFFFF3366),
+                                modifier = Modifier.weight(1f),
+                                onClick = onNavigateToFavorites
+                            )
+                        }
                     }
                 }
 
