@@ -70,7 +70,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 .map { it.isEnded to it.currentVideoId }
                 .distinctUntilChanged()
                 .collect { (ended, videoId) ->
-                    if (!ended || videoId == 0L || handledEndForVideoId == videoId) return@collect
+                    if (!ended) { handledEndForVideoId = -1L; return@collect }
+                    if (videoId == 0L || handledEndForVideoId == videoId) return@collect
                     handledEndForVideoId = videoId
                     when {
                         _isRepeatEnabled.value -> {
