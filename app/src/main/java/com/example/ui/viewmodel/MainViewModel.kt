@@ -195,11 +195,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private var activeScanJob: Job? = null
 
-    init {
-        // Startup media sync runs asynchronously in background without blocking Home UI
-        scanMedia(force = false)
-    }
-
     fun scanMedia(force: Boolean = false) {
         // Debounce / coalesce: if a background scan is already running and not forced, do not spawn duplicate jobs
         if (activeScanJob?.isActive == true && !force) {
