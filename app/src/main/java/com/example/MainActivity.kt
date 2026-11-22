@@ -135,23 +135,47 @@ fun PakPlayApp(
     PakPlayTheme {
         val navController = rememberNavController()
 
-        // Runtime storage permission request flow
-        val permissionToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            Manifest.permission.READ_MEDIA_VIDEO
-        } else {
-            Manifest.permission.READ_EXTERNAL_STORAGE
+        // Request only video-library access. Android 14+ supports either full
+        // video access or the user's selected-video access; audio/storage-write
+        // permissions are not needed for a local video player.
+        val videoPermissions = remember {
+            when {
+                Build.VERSION.SDK_INT >= 34 -> arrayOf(
+                    Manifest.permission.READ_MEDIA_VIDEO,
+                    Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+                )
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
+                    arrayOf(Manifest.permission.READ_MEDIA_VIDEO)
+                else -> arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
         }
 
         val permissionLauncher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission()
-        ) { isGranted ->
-            if (isGranted) {
+            contract = ActivityResultContracts.RequestMultiplePermissions()
+        ) { results ->
+            if (results.values.any { it }) {
                 mainViewModel.scanMedia()
             }
         }
 
         LaunchedEffect(Unit) {
-            permissionLauncher.launch(permissionToRequest)
+            val hasFullVideoAccess = ContextCompat.checkSelfPermission(
+                navController.context,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                    Manifest.permission.READ_MEDIA_VIDEO
+                else Manifest.permission.READ_EXTERNAL_STORAGE
+            ) == PackageManager.PERMISSION_GRANTED
+            val hasSelectedVideoAccess = Build.VERSION.SDK_INT >= 34 &&
+                ContextCompat.checkSelfPermission(
+                    navController.context,
+                    Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
+                ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasFullVideoAccess && !hasSelectedVideoAccess) {
+                permissionLauncher.launch(videoPermissions)
+            } else {
+                mainViewModel.scanMedia()
+            }
         }
 
         MainAppScaffold(
