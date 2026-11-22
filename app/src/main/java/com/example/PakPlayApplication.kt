@@ -26,15 +26,16 @@ class PakPlayApplication : Application(), ImageLoaderFactory {
         private set
 
     override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
+        val appContext = this
+        return ImageLoader.Builder(appContext)
             .memoryCache {
-                MemoryCache.Builder(this)
+                MemoryCache.Builder(appContext)
                     .maxSizePercent(0.20)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
-                    .directory(cacheDir.resolve("video_thumbnails"))
+                    .directory(appContext.cacheDir.resolve("video_thumbnails"))
                     .maxSizePercent(0.02)
                     .build()
             }
