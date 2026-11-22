@@ -239,7 +239,7 @@ fun PlayerScreen(
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .padding(bottom = if (playerUiState.showControls) 90.dp else 24.dp)
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Surface(
@@ -318,7 +318,7 @@ fun PlayerScreen(
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(24.dp)
+                    .padding(16.dp)
             ) {
                 Surface(
                     color = Color.Black.copy(alpha = 0.9f),
