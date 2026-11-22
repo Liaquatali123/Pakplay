@@ -61,6 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -134,6 +135,7 @@ fun PakPlayApp(
 ) {
     PakPlayTheme {
         val navController = rememberNavController()
+        val context = LocalContext.current
 
         // Request only video-library access. Android 14+ supports either full
         // video access or the user's selected-video access; audio/storage-write
@@ -160,14 +162,14 @@ fun PakPlayApp(
 
         LaunchedEffect(Unit) {
             val hasFullVideoAccess = ContextCompat.checkSelfPermission(
-                navController.context,
+                context,
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                     Manifest.permission.READ_MEDIA_VIDEO
                 else Manifest.permission.READ_EXTERNAL_STORAGE
             ) == PackageManager.PERMISSION_GRANTED
             val hasSelectedVideoAccess = Build.VERSION.SDK_INT >= 34 &&
                 ContextCompat.checkSelfPermission(
-                    navController.context,
+                    context,
                     Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED
                 ) == PackageManager.PERMISSION_GRANTED
 
